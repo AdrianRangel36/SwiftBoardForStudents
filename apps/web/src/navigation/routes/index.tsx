@@ -1,4 +1,5 @@
 import { Home } from "@/pages/Landing/Home";
+import { Login } from "@/pages/auth/Login";
 import { SignUp } from "@/pages/auth/SignUp";
 import { Routes, Route } from "react-router-dom";
 
@@ -7,6 +8,7 @@ export const AppRouter = (): React.ReactElement => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/SignUp" element={<SignUp />} />
+      <Route path="/Login" element={<Login />} />
       <Route
         path="*"
         element={
