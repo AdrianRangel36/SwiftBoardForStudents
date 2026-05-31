@@ -66,18 +66,14 @@ export const Login: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Login exitoso
         alert("¡Sesión iniciada exitosamente! Redirigiendo...");
-        // Guardar token si viene en la respuesta
         if (data.token) {
           localStorage.setItem("authToken", data.token);
         }
-        // Redirigir al dashboard después de 1 segundo
         setTimeout(() => {
           window.location.href = "/dashboard";
         }, 1000);
       } else {
-        // Error del servidor
         setError(data.message || "Error al iniciar sesión. Intenta nuevamente.");
       }
     } catch (error) {
