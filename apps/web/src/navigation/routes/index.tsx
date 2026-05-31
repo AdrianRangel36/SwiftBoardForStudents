@@ -1,9 +1,12 @@
-import { Routes, Route } from "react-router-dom"
+import { Home } from "@/pages/Landing/Home";
+import { SignUp } from "@/pages/auth/SignUp";
+import { Routes, Route } from "react-router-dom";
 
 export const AppRouter = (): React.ReactElement => {
   return (
     <Routes>
-      {/* <Route path="/" element={<Home />} /> */}
+      <Route path="/" element={<Home />} />
+      <Route path="/SignUp" element={<SignUp />} />
       <Route
         path="*"
         element={
@@ -16,5 +19,5 @@ export const AppRouter = (): React.ReactElement => {
         }
       />
     </Routes>
-  )
-}
+  );
+};
