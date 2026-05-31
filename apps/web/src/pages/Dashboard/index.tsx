@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
-// Asegúrate de exportar estos componentes en tu packages/ui/package.json o archivo de barril
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@workspace/ui/components/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
-// Definimos la interfaz basada en tu FindTeamDto del backend
 interface Team {
   id: number;
   name: string;
@@ -19,22 +17,18 @@ export const Dashboard = () => {
   const [newTeamName, setNewTeamName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Explicación clave 1: useEffect para consumo inicial
   useEffect(() => {
     fetchTeams();
-  }, []); // El array vacío [] significa: "Ejecuta esto solo UNA vez al montar el componente"
+  }, []); 
 
   const fetchTeams = async () => {
     try {
         setIsLoading(true);
-        const token = localStorage.getItem("token"); // Obtenemos el JWT
-
-        // Explicación clave 2: Usando Fetch con Headers
+        const token = localStorage.getItem("token"); 
         const response = await fetch("http://localhost:3000/team", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                // Aquí inyectamos el token para pasar el @UseGuards(JwtAuthGuard) de NestJS
                 "Authorization": `Bearer ${token}` 
             }
         });
@@ -50,7 +44,7 @@ export const Dashboard = () => {
     }
   };
 
-  const handleCreateTeam = async (e: React.FormEvent) => {
+  const handleCreateTeam = async (e: React.SubmitEvent) => {
     e.preventDefault();
     try {
         const token = localStorage.getItem("token");
@@ -60,12 +54,11 @@ export const Dashboard = () => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({ name: newTeamName }) // Coincide con tu CreateTeamDto
+            body: JSON.stringify({ name: newTeamName }) 
         });
 
         if (!response.ok) throw new Error("Error al crear equipo");
 
-        // Si fue exitoso, cerramos el modal, limpiamos el input y recargamos la lista
         setIsDialogOpen(false);
         setNewTeamName("");
         fetchTeams(); 
