@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, LayoutDashboard } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -44,6 +44,7 @@ export const Dashboard = () => {
   const userInitials = user
     ? `${user.name.charAt(0)}${user.paternalSurname.charAt(0)}`.toUpperCase()
     : "NA";
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -60,21 +61,7 @@ export const Dashboard = () => {
       const currentUser = userData || user;
       const userId = currentUser?.id;
 
-      console.log(
-        "Fetching teams for userId:",
-        userId,
-        "with user data:",
-        currentUser
-      );
-
-      if (!userId) {
-        console.error("No userId available");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!token) {
-        console.error("No token available");
+      if (!userId || !token) {
         setIsLoading(false);
         return;
       }
@@ -187,11 +174,20 @@ export const Dashboard = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Renderizado dinámico de la lista de equipos */}
           {isLoading ? (
-            <p className="text-gray-500">Cargando tableros...</p>
+            <div className="col-span-1 sm:col-span-1 lg:col-span-3 flex min-h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent">
+              <p className="text-gray-500 animate-pulse">Cargando tableros...</p>
+            </div>
           ) : teams.length === 0 ? (
-            <h1>No hay equipos</h1>
+            <div className="col-span-1 sm:col-span-1 lg:col-span-2 flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent text-center opacity-80">
+              <div className="mb-3 rounded-full bg-gray-100 p-3">
+                <LayoutDashboard className="h-6 w-6 text-gray-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-900">Ningún tablero a la vista</h3>
+              <p className="mt-1 text-sm text-gray-500 max-w-62.5">
+                Aún no perteneces a ningún equipo. Crea tu primer tablero para comenzar.
+              </p>
+            </div>
           ) : (
             teams.map((team) => (
               <Card
