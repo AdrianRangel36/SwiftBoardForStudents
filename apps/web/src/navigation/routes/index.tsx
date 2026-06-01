@@ -1,3 +1,4 @@
+import { Dashboard } from "@/pages/Dashboard";
 import { Home } from "@/pages/Landing/Home";
 import { Login } from "@/pages/auth/Login";
 import { SignUp } from "@/pages/auth/SignUp";
@@ -9,6 +10,7 @@ export const AppRouter = (): React.ReactElement => {
       <Route path="/" element={<Home />} />
       <Route path="/SignUp" element={<SignUp />} />
       <Route path="/Login" element={<Login />} />
+      <Route path="/Dashboard" element={<Dashboard />} />
       <Route
         path="*"
         element={

@@ -9,8 +9,11 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
+import { useNavigate } from "react-router-dom";
 
 export const Login: React.FC = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,12 +30,11 @@ export const Login: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Validación básica
     if (!formData.email.trim()) {
       setError("El correo electrónico es requerido");
       setIsLoading(false);
@@ -64,21 +66,19 @@ export const Login: React.FC = () => {
       });
 
       const data = await response.json();
-
       if (response.ok) {
-        // Login exitoso
-        alert("¡Sesión iniciada exitosamente! Redirigiendo...");
-        // Guardar token si viene en la respuesta
-        if (data.token) {
-          localStorage.setItem("authToken", data.token);
+        if (data.access_token) {
+          localStorage.setItem("token", data.access_token);
+          localStorage.setItem("user", JSON.stringify(data.user));
         }
-        // Redirigir al dashboard después de 1 segundo
+
         setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1000);
+          navigate("/dashboard");
+        }, 500);
       } else {
-        // Error del servidor
-        setError(data.message || "Error al iniciar sesión. Intenta nuevamente.");
+        setError(
+          data.message || "Error al iniciar sesión. Intenta nuevamente."
+        );
       }
     } catch (error) {
       console.error("Error en login:", error);
@@ -111,7 +111,7 @@ export const Login: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Mensaje de error */}
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 border border-red-200">
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                 {error}
               </div>
             )}
@@ -154,11 +154,7 @@ export const Login: React.FC = () => {
             </div>
 
             {/* Botón de Submit */}
-            <Button
-              type="submit"
-              className="mt-2 w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>

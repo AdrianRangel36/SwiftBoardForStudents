@@ -41,7 +41,7 @@ export const Home: React.FC = () => {
         {/* Título Principal de Impacto */}
         <h1 className="mb-6 text-4xl leading-tight font-extrabold tracking-tight text-slate-900 sm:text-6xl">
           Organiza tus proyectos escolares <br className="hidden sm:block" />
-          <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
             en segundos, sin el caos.
           </span>
         </h1>
