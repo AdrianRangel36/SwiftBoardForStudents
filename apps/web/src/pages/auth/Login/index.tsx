@@ -9,8 +9,11 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
+import { useNavigate } from "react-router-dom";
 
 export const Login: React.FC = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -66,9 +69,11 @@ export const Login: React.FC = () => {
       if (response.ok) {
         if (data.access_token) {
           localStorage.setItem("token", data.access_token);
+          localStorage.setItem("user", JSON.stringify(data.user));
         }
+
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          navigate("/dashboard");
         }, 500);
       } else {
         setError(
