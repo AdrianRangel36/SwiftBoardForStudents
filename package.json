@@ -24,6 +24,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "date-fns": "^4.4.0",
     "react-router-dom": "^7.16.0"
   }
 }
