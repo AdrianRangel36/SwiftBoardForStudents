@@ -3,6 +3,7 @@ import { Home } from "@/pages/Landing/Home";
 import { Login } from "@/pages/auth/Login";
 import { SignUp } from "@/pages/auth/SignUp";
 import { Routes, Route } from "react-router-dom";
+import { KanbanBoard } from "@/pages/KanbanBoard";
 
 export const AppRouter = (): React.ReactElement => {
   return (
@@ -11,6 +12,7 @@ export const AppRouter = (): React.ReactElement => {
       <Route path="/SignUp" element={<SignUp />} />
       <Route path="/Login" element={<Login />} />
       <Route path="/Dashboard" element={<Dashboard />} />
+      <Route path="/team/:teamId" element={<KanbanBoard />} />
       <Route
         path="*"
         element={

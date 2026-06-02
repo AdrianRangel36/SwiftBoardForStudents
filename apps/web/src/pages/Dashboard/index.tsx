@@ -21,6 +21,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@workspace/ui/components/avatar";
+import { useNavigate } from "react-router-dom";
 
 interface Team {
   id: number;
@@ -35,7 +36,7 @@ interface UserData {
   email: string;
 }
 
-export const Dashboard = () => {
+export const Dashboard:React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newTeamName, setNewTeamName] = useState("");
@@ -44,6 +45,8 @@ export const Dashboard = () => {
   const userInitials = user
     ? `${user.name.charAt(0)}${user.paternalSurname.charAt(0)}`.toUpperCase()
     : "NA";
+
+  const navigate = useNavigate(); // Inicializa el hook
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -175,17 +178,22 @@ export const Dashboard = () => {
           </Dialog>
 
           {isLoading ? (
-            <div className="col-span-1 sm:col-span-1 lg:col-span-3 flex min-h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent">
-              <p className="text-gray-500 animate-pulse">Cargando tableros...</p>
+            <div className="col-span-1 flex min-h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent sm:col-span-1 lg:col-span-3">
+              <p className="animate-pulse text-gray-500">
+                Cargando tableros...
+              </p>
             </div>
           ) : teams.length === 0 ? (
-            <div className="col-span-1 sm:col-span-1 lg:col-span-2 flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent text-center opacity-80">
+            <div className="col-span-1 flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-transparent text-center opacity-80 sm:col-span-1 lg:col-span-2">
               <div className="mb-3 rounded-full bg-gray-100 p-3">
                 <LayoutDashboard className="h-6 w-6 text-gray-400" />
               </div>
-              <h3 className="text-sm font-semibold text-gray-900">Ningún tablero a la vista</h3>
-              <p className="mt-1 text-sm text-gray-500 max-w-62.5">
-                Aún no perteneces a ningún equipo. Crea tu primer tablero para comenzar.
+              <h3 className="text-sm font-semibold text-gray-900">
+                Ningún tablero a la vista
+              </h3>
+              <p className="mt-1 max-w-62.5 text-sm text-gray-500">
+                Aún no perteneces a ningún equipo. Crea tu primer tablero para
+                comenzar.
               </p>
             </div>
           ) : (
@@ -193,6 +201,7 @@ export const Dashboard = () => {
               <Card
                 key={team.id}
                 className="min-h-40 cursor-pointer transition-shadow hover:shadow-md"
+                onClick={() => navigate(`/team/${team.id}`)}
               >
                 <CardHeader>
                   <CardTitle className="text-lg">{team.name}</CardTitle>
