@@ -5,7 +5,7 @@ import { SignUp } from "@/pages/auth/SignUp";
 import { Dashboard } from "@/pages/Dashboard";
 import { ProtectedRoute } from "../Components/ProtectedRoute";
 import { TeamProtectedRoute } from "../Components/TeamProtectedRoute"; 
-// import { KanbanBoard } from "@/pages/KanbanBoard";
+import { KanbanBoard } from "@/pages/KanbanBoard";
 
 export const AppRouter = (): React.ReactElement => {
   return (
@@ -17,7 +17,7 @@ export const AppRouter = (): React.ReactElement => {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route element={<TeamProtectedRoute />}>
-          {/* <Route path="/team/:teamId" element={<KanbanBoard />} /> */}
+          <Route path="/team/:teamId" element={<KanbanBoard />} />
         </Route>
       </Route>
 

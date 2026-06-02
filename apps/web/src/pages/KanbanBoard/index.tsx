@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 import { ArrowLeft, Trash2, Users } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -22,6 +22,13 @@ interface Task {
   endDate: string;
 }
 
+interface TeamData {
+  id: number;
+  name: string;
+  description?: string;
+  [key: string]: any;
+}
+
 const KANBAN_COLUMNS = [
   { id: 'TO_DO', title: 'Por Hacer', color: 'bg-slate-200 border-slate-300' },
   { id: 'IN_PROGRESS', title: 'En Progreso', color: 'bg-blue-100 border-blue-200' },
@@ -32,16 +39,12 @@ const KANBAN_COLUMNS = [
 export const KanbanBoard = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const teamData = useOutletContext<TeamData>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Estado simulado para el UI del equipo (luego lo conectaremos al backend)
-  const [teamName, setTeamName] = useState("Cargando equipo...");
 
   useEffect(() => {
     fetchTeamTasks();
-    // Simulación de carga del nombre del equipo
-    setTeamName("Proyecto SwiftBoard");
   }, [teamId]);
 
   const fetchTeamTasks = async () => {
@@ -75,7 +78,7 @@ export const KanbanBoard = () => {
             <ArrowLeft className="h-5 w-5 text-gray-700" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{teamName}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{teamData?.name || "Equipo"}</h1>
             <p className="flex items-center text-sm text-gray-500">
               <Users className="mr-1 h-4 w-4" /> Tablero de equipo
             </p>
