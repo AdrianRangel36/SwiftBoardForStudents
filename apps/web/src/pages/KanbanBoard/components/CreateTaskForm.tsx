@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, X } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 
 import { Button } from "@workspace/ui/components/button";
@@ -28,6 +28,8 @@ interface CreateTaskFormProps {
   teamId: string | undefined;
   teamMembers: TeamMember[];
   onTaskCreated: () => void;
+  taskToEdit?: Task | null;
+  onCancelEdit?: () => void;
 }
 
 const KANBAN_COLUMNS = [
@@ -41,6 +43,8 @@ export const CreateTaskForm = ({
   teamId,
   teamMembers,
   onTaskCreated,
+  taskToEdit,
+  onCancelEdit,
 }: CreateTaskFormProps) => {
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
@@ -51,7 +55,31 @@ export const CreateTaskForm = ({
   const [newTaskEndDate, setNewTaskEndDate] = useState<Date>();
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateTask = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (taskToEdit) {
+      setNewTaskName(taskToEdit.name);
+      setNewTaskDesc(taskToEdit.description);
+      setNewTaskGoals(taskToEdit.goals);
+      setNewTaskStatus(taskToEdit.status);
+      setNewTaskAssignee(taskToEdit.assignedMemberId.toString());
+      setNewTaskStartDate(new Date(taskToEdit.startDate));
+      setNewTaskEndDate(new Date(taskToEdit.endDate));
+    } else {
+      resetForm();
+    }
+  }, [taskToEdit]);
+
+  const resetForm = () => {
+    setNewTaskName("");
+    setNewTaskDesc("");
+    setNewTaskGoals("");
+    setNewTaskStatus("TO_DO");
+    setNewTaskAssignee("");
+    setNewTaskStartDate(undefined);
+    setNewTaskEndDate(undefined);
+  };
+
+  const handleCreateTask = async (e: React.SubmitEvent) => {
     e.preventDefault();
 
     if (
@@ -70,8 +98,14 @@ export const CreateTaskForm = ({
       setIsCreating(true);
       const token = localStorage.getItem("token");
 
-      const response = await fetch("http://localhost:3000/tasks", {
-        method: "POST",
+      const url = taskToEdit
+        ? `http://localhost:3000/tasks/${taskToEdit.id}`
+        : "http://localhost:3000/tasks";
+
+      const method = taskToEdit ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -88,36 +122,42 @@ export const CreateTaskForm = ({
         }),
       });
 
-      if (!response.ok) throw new Error("Error al crear la tarea");
+      if (!response.ok) throw new Error("Error al guardar la tarea");
 
-      setNewTaskName("");
-      setNewTaskDesc("");
-      setNewTaskGoals("");
-      setNewTaskStatus("TO_DO");
-      setNewTaskAssignee("");
-      setNewTaskStartDate(undefined);
-      setNewTaskEndDate(undefined);
-
+      resetForm();
       onTaskCreated();
+      if (onCancelEdit) onCancelEdit();
     } catch (error) {
-      console.error("Error creating task:", error);
-      alert("Hubo un conflicto al crear la tarea. Revisa los datos.");
+      console.error("Error saving task:", error);
+      alert("Hubo un conflicto al guardar la tarea. Revisa los datos.");
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-4 border-b pb-2 text-lg font-bold text-gray-900">
-        Agregar nueva tarea
-      </h3>
+    <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all">
+      <div className="mb-4 flex items-center justify-between border-b pb-2">
+        <h3 className="text-lg font-bold text-gray-900">
+          {taskToEdit ? "Modificar Tarea" : "Agregar nueva tarea"}
+        </h3>
+
+        {taskToEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCancelEdit}
+            className="text-gray-500"
+          >
+            <X className="mr-2 h-4 w-4" /> Cancelar Edición
+          </Button>
+        )}
+      </div>
 
       <form
         onSubmit={handleCreateTask}
         className="grid grid-cols-1 gap-4 lg:grid-cols-12"
       >
-        {/* Fila 1: Título y Descripción */}
         <div className="space-y-2 lg:col-span-4">
           <Label htmlFor="taskName">Título de la tarea</Label>
           <Input
@@ -136,8 +176,6 @@ export const CreateTaskForm = ({
             required
           />
         </div>
-
-        {/* Fila 2: Objetivos */}
         <div className="space-y-2 lg:col-span-12">
           <Label htmlFor="taskGoals">Objetivos / Entregables</Label>
           <Textarea
@@ -149,7 +187,6 @@ export const CreateTaskForm = ({
           />
         </div>
 
-        {/* Fila 3: Asignado, Estado, Fechas */}
         <div className="space-y-2 lg:col-span-3">
           <Label>Asignar a</Label>
           <Select value={newTaskAssignee} onValueChange={setNewTaskAssignee}>
@@ -187,7 +224,6 @@ export const CreateTaskForm = ({
           </Select>
         </div>
 
-        {/* Fecha de Inicio */}
         <div className="flex flex-col justify-end space-y-2 lg:col-span-2">
           <Label>Fecha Inicio</Label>
           <Popover>
@@ -217,7 +253,6 @@ export const CreateTaskForm = ({
           </Popover>
         </div>
 
-        {/* Fecha de Fin */}
         <div className="flex flex-col justify-end space-y-2 lg:col-span-2">
           <Label>Fecha Fin</Label>
           <Popover>
@@ -247,7 +282,7 @@ export const CreateTaskForm = ({
           </Popover>
         </div>
 
-        {/* Botón Guardar */}
+        {/* Botón Guardar modificado para cambiar de texto */}
         <div className="flex flex-col justify-end lg:col-span-2">
           <Button
             type="submit"
@@ -256,6 +291,8 @@ export const CreateTaskForm = ({
           >
             {isCreating ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : taskToEdit ? (
+              "Guardar Cambios"
             ) : (
               "Crear Tarea"
             )}

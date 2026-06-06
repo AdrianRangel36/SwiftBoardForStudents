@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 
 import { KanbanHeader, KanbanColumn, CreateTaskForm } from "./components";
@@ -13,6 +13,9 @@ export const KanbanBoard = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchTeamTasks();
     fetchTeamMembers();
@@ -23,9 +26,7 @@ export const KanbanBoard = () => {
       const token = localStorage.getItem("token");
       const response = await fetch(
         `http://localhost:3000/tasks/team-tasks/${teamId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) setTasks(await response.json());
     } catch (error) {
@@ -48,7 +49,7 @@ export const KanbanBoard = () => {
         setTeamMembers(membersOfThisTeam);
       }
     } catch (error) {
-      console.error("Error obteniendo miembros:", error);
+      console.error("Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +57,13 @@ export const KanbanBoard = () => {
 
   const getTasksByStatus = (status: string) => {
     return tasks.filter((task) => task.status === status);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   return (
@@ -76,16 +84,21 @@ export const KanbanBoard = () => {
                 title={col.title}
                 color={col.color}
                 tasks={getTasksByStatus(col.id)}
+                onEditTask={handleEditTask} // <--- PASAMOS LA FUNCIÓN
               />
             ))}
           </div>
         )}
 
-        <CreateTaskForm
-          teamId={teamId}
-          teamMembers={teamMembers}
-          onTaskCreated={fetchTeamTasks}
-        />
+        <div ref={formRef}>
+          <CreateTaskForm
+            teamId={teamId}
+            teamMembers={teamMembers}
+            onTaskCreated={fetchTeamTasks}
+            taskToEdit={taskToEdit}
+            onCancelEdit={() => setTaskToEdit(null)}
+          />
+        </div>
       </main>
     </div>
   );
