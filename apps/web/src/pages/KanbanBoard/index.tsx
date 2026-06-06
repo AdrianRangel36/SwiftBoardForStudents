@@ -66,6 +66,33 @@ export const KanbanBoard = () => {
     }, 100);
   };
 
+  const handleDeleteTask = async (taskId: number) => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar esta tarea? Esta acción es irreversible."
+    );
+    if (!isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Error al eliminar la tarea");
+
+      fetchTeamTasks();
+
+      if (taskToEdit && taskToEdit.id === taskId) {
+        setTaskToEdit(null);
+      }
+    } catch (error) {
+      console.error("Error eliminando la tarea:", error);
+      alert("Hubo un problema al intentar eliminar la tarea.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <KanbanHeader teamName={teamData?.name || "Equipo"} />
@@ -84,7 +111,8 @@ export const KanbanBoard = () => {
                 title={col.title}
                 color={col.color}
                 tasks={getTasksByStatus(col.id)}
-                onEditTask={handleEditTask} // <--- PASAMOS LA FUNCIÓN
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
               />
             ))}
           </div>
