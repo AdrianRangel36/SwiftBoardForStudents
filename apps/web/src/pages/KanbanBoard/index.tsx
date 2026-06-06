@@ -5,6 +5,7 @@ import { KanbanHeader, KanbanColumn, CreateTaskForm } from "./components";
 import type { Task, TeamData, TeamMember } from "./types";
 import { KANBAN_COLUMNS } from "./types";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const KanbanBoard = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const teamData = useOutletContext<TeamData>();
@@ -25,7 +26,7 @@ export const KanbanBoard = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:3000/tasks/team-tasks/${teamId}`,
+        `${API_BASE_URL}/tasks/team-tasks/${teamId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -56,7 +57,7 @@ export const KanbanBoard = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:3000/team-members`, {
+      const response = await fetch(`${API_BASE_URL}/team-members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -113,7 +114,7 @@ export const KanbanBoard = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

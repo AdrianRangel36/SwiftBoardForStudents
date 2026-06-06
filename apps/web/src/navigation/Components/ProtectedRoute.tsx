@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { Loader2 } from "lucide-react"; 
+import { Loader2 } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const ProtectedRoute = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -14,12 +15,12 @@ export const ProtectedRoute = () => {
       }
 
       try {
-        const response = await fetch("http://localhost:3000/auth/verify", {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
           method: "GET",
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (response.ok) {
@@ -43,7 +44,9 @@ export const ProtectedRoute = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-        <span className="ml-3 text-lg font-medium text-gray-600">Verificando sesión...</span>
+        <span className="ml-3 text-lg font-medium text-gray-600">
+          Verificando sesión...
+        </span>
       </div>
     );
   }

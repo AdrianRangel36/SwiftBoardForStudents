@@ -39,6 +39,7 @@ const KANBAN_COLUMNS = [
   { id: "DONE", title: "Completado" },
 ] as const;
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const CreateTaskForm = ({
   teamId,
   teamMembers,
@@ -99,8 +100,8 @@ export const CreateTaskForm = ({
       const token = localStorage.getItem("token");
 
       const url = taskToEdit
-        ? `http://localhost:3000/tasks/${taskToEdit.id}`
-        : "http://localhost:3000/tasks";
+        ? `${API_BASE_URL}/tasks/${taskToEdit.id}`
+        : `${API_BASE_URL}/tasks`;
 
       const method = taskToEdit ? "PUT" : "POST";
 

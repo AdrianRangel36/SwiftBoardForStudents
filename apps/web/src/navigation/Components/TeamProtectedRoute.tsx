@@ -9,6 +9,7 @@ interface TeamData {
   [key: string]: any;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const TeamProtectedRoute = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
@@ -23,12 +24,12 @@ export const TeamProtectedRoute = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/team/${teamId}`, {
+        const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
           method: "GET",
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (response.ok) {
