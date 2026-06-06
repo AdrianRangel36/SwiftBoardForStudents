@@ -57,9 +57,12 @@ export const KanbanBoard = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/team-members`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/team-members/findallteam/${teamId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!response.ok) {
         console.error(
@@ -134,8 +137,19 @@ export const KanbanBoard = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <KanbanHeader teamName={teamData?.name || "Equipo"} />
-
+      <KanbanHeader
+        teamName={teamData?.name || "Equipo"}
+        teamMembers={teamMembers}
+        onDeleteTeam={() => {
+          // Aquí puedes llamar a tu función handleDeleteTeam(teamId)
+          // O si quieres implementar la ruta de eliminar equipo
+          console.log("Eliminar equipo: ", teamId);
+        }}
+        onLeaveTeam={() => {
+          // Aquí puedes hacer un DELETE a /team-members/:id
+          console.log("Salir del equipo");
+        }}
+      />
       <main className="flex flex-1 flex-col p-6">
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center">
