@@ -28,9 +28,27 @@ export const KanbanBoard = () => {
         `http://localhost:3000/tasks/team-tasks/${teamId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.ok) setTasks(await response.json());
+
+      if (!response.ok) {
+        console.error(
+          `Error fetching tasks: ${response.status} ${response.statusText}`
+        );
+        setTasks([]);
+        return;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        console.warn("Empty response from server");
+        setTasks([]);
+        return;
+      }
+
+      const data = JSON.parse(text);
+      setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching tasks:", error);
+      setTasks([]);
     }
   };
 
@@ -41,15 +59,35 @@ export const KanbanBoard = () => {
       const response = await fetch(`http://localhost:3000/team-members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        const allMembers: TeamMember[] = await response.json();
+
+      if (!response.ok) {
+        console.error(
+          `Error fetching members: ${response.status} ${response.statusText}`
+        );
+        setTeamMembers([]);
+        return;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        console.warn("Empty response from server");
+        setTeamMembers([]);
+        return;
+      }
+
+      const allMembers: TeamMember[] = JSON.parse(text);
+      if (Array.isArray(allMembers)) {
         const membersOfThisTeam = allMembers.filter(
           (m) => m.teamId === Number(teamId)
         );
         setTeamMembers(membersOfThisTeam);
+      } else {
+        console.warn("Unexpected response format for team members");
+        setTeamMembers([]);
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching members:", error);
+      setTeamMembers([]);
     } finally {
       setIsLoading(false);
     }

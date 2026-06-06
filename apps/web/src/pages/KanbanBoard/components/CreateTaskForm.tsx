@@ -122,14 +122,27 @@ export const CreateTaskForm = ({
         }),
       });
 
-      if (!response.ok) throw new Error("Error al guardar la tarea");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `Error saving task: ${response.status} ${response.statusText}`,
+          errorText
+        );
+        throw new Error(
+          `Error al guardar la tarea: ${response.status} ${response.statusText}`
+        );
+      }
 
       resetForm();
       onTaskCreated();
       if (onCancelEdit) onCancelEdit();
     } catch (error) {
       console.error("Error saving task:", error);
-      alert("Hubo un conflicto al guardar la tarea. Revisa los datos.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Hubo un conflicto al guardar la tarea. Revisa los datos."
+      );
     } finally {
       setIsCreating(false);
     }
