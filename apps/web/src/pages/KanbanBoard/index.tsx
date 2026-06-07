@@ -4,6 +4,7 @@ import { useParams, useOutletContext } from "react-router-dom";
 import { KanbanHeader, KanbanColumn, CreateTaskForm } from "./components";
 import type { Task, TeamData, TeamMember } from "./types";
 import { KANBAN_COLUMNS } from "./types";
+import type { UserData } from "../Dashboard/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const KanbanBoard = () => {
@@ -16,10 +17,16 @@ export const KanbanBoard = () => {
 
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     fetchTeamTasks();
     fetchTeamMembers();
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+    }
   }, [teamId]);
 
   const fetchTeamTasks = async () => {
@@ -135,20 +142,100 @@ export const KanbanBoard = () => {
     }
   };
 
+  const handleDeleteTeam = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar este equipo? Esta acción es irreversible."
+    );
+    if (!isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Error al eliminar el equipo");
+
+      alert("Equipo eliminado exitosamente");
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Error eliminando el equipo:", error);
+      alert("Hubo un problema al intentar eliminar el equipo.");
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    //reutilizar función en el futuro para que OWNER elimine miembros
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas salir de este equipo?"
+    );
+    if (!isConfirmed) return;
+    try {
+      const token = localStorage.getItem("token");
+
+      const teamMember = teamMembers.find((m) => m.userId === Number(user?.id));
+      if (!teamMember) {
+        throw new Error("No se encontró tu membresía en el equipo");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: Number(user?.id),
+          teamId: Number(teamId),
+        }),
+      });
+      if (!response.ok)
+        throw new Error(`Error al salir del equipo:`);
+
+      alert("Has salido del equipo exitosamente");
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Error al salir del equipo:", error);
+      alert("Hubo un problema al intentar salir del equipo.");
+    }
+  };
+
+  const handleUpdateTeam = async () => {
+    const newTeamName = prompt(
+      "Ingresa el nuevo nombre del equipo:",
+      teamData?.name
+    );
+    if (!newTeamName || newTeamName.trim() === "") return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newTeamName.trim() }),
+      });
+
+      if (!response.ok) throw new Error("Error al actualizar el equipo");
+
+      alert("Equipo actualizado exitosamente");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error actualizando el equipo:", error);
+      alert("Hubo un problema al intentar actualizar el equipo.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <KanbanHeader
         teamName={teamData?.name || "Equipo"}
         teamMembers={teamMembers}
-        onDeleteTeam={() => {
-          // Aquí puedes llamar a tu función handleDeleteTeam(teamId)
-          // O si quieres implementar la ruta de eliminar equipo
-          console.log("Eliminar equipo: ", teamId);
-        }}
-        onLeaveTeam={() => {
-          // Aquí puedes hacer un DELETE a /team-members/:id
-          console.log("Salir del equipo");
-        }}
+        onDeleteTeam={handleDeleteTeam}
+        onLeaveTeam={handleLeaveTeam}
+        onUpdateTeam={handleUpdateTeam}
       />
       <main className="flex flex-1 flex-col p-6">
         {isLoading ? (

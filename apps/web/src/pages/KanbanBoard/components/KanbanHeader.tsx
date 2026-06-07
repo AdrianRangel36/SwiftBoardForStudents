@@ -1,5 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, Users, ChevronDown, LogOut } from "lucide-react";
+import {
+  ArrowLeft,
+  Trash2,
+  Users,
+  ChevronDown,
+  LogOut,
+  LucideTableConfig,
+} from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import {
@@ -14,16 +21,18 @@ import type { TeamMember } from "../types";
 
 interface KanbanHeaderProps {
   teamName: string;
-  teamMembers: TeamMember[]; 
+  teamMembers: TeamMember[];
   onDeleteTeam?: () => void;
   onLeaveTeam?: () => void;
+  onUpdateTeam?: () => void;
 }
 
-export const KanbanHeader = ({ 
-  teamName, 
-  teamMembers = [], 
-  onDeleteTeam, 
-  onLeaveTeam 
+export const KanbanHeader = ({
+  teamName,
+  teamMembers = [],
+  onDeleteTeam,
+  onLeaveTeam,
+  onUpdateTeam,
 }: KanbanHeaderProps) => {
   const navigate = useNavigate();
 
@@ -35,7 +44,6 @@ export const KanbanHeader = ({
     if (!member.user) return "NA";
     return `${member.user.name.charAt(0)}${member.user.paternalSurname.charAt(0)}`.toUpperCase();
   };
-
 
   const displayMembers = teamMembers.slice(0, 3);
   const remainingMembersCount = teamMembers.length - 3;
@@ -62,20 +70,21 @@ export const KanbanHeader = ({
       </div>
 
       <div className="flex items-center justify-between gap-6 md:justify-end">
-        
         {/* SECCIÓN DE USUARIOS Y MENÚ */}
         <div className="flex items-center">
-          
           {/* Grupo de Avatares superpuestos (-space-x-3) */}
           <div className="flex -space-x-3">
             {displayMembers.map((member) => (
-              <Avatar key={member.id} className="h-10 w-10 border-2 border-white">
+              <Avatar
+                key={member.id}
+                className="h-10 w-10 border-2 border-white"
+              >
                 <AvatarFallback className="bg-indigo-100 text-sm font-semibold text-indigo-700">
                   {getInitials(member)}
                 </AvatarFallback>
               </Avatar>
             ))}
-            
+
             {/* Burbuja extra si hay más de 3 miembros */}
             {remainingMembersCount > 0 && (
               <Avatar className="h-10 w-10 border-2 border-white">
@@ -94,12 +103,17 @@ export const KanbanHeader = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Miembros del equipo ({teamMembers.length})</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                Miembros del equipo ({teamMembers.length})
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              
+
               {/* Lista dinámica de miembros */}
               {teamMembers.map((member) => (
-                <DropdownMenuItem key={member.id} className="flex items-center gap-3 py-2">
+                <DropdownMenuItem
+                  key={member.id}
+                  className="flex items-center gap-3 py-2"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-blue-50 text-xs font-semibold text-blue-700">
                       {getInitials(member)}
@@ -107,28 +121,46 @@ export const KanbanHeader = ({
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-900">
-                      {member.user ? `${member.user.name} ${member.user.paternalSurname}` : `ID: ${member.id}`}
+                      {member.user
+                        ? `${member.user.name} ${member.user.paternalSurname}`
+                        : `ID: ${member.id}`}
                     </span>
-                    <span className="text-[10px] text-gray-500">{member.role}</span>
+                    <span className="text-[10px] text-gray-500">
+                      {member.role}
+                    </span>
                   </div>
                 </DropdownMenuItem>
               ))}
-              
+
               <DropdownMenuSeparator />
-              
+
               {/* Renderizado Condicional del Botón Peligroso */}
               {isOwner ? (
-                <DropdownMenuItem 
-                  onClick={onDeleteTeam} 
-                  className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 py-3"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  <span className="font-semibold">Eliminar Equipo</span>
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    onClick={onUpdateTeam}
+                    className="cursor-pointer"
+                  >
+                    <LucideTableConfig className="mr-2 h-4 w-4" />
+                    <span className="font-semibold">
+                      Configuración del equipo
+                    </span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={onDeleteTeam}
+                    className="cursor-pointer py-3 text-red-600 focus:bg-red-50 focus:text-red-700"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span className="font-semibold">Eliminar Equipo</span>
+                  </DropdownMenuItem>
+                </>
               ) : (
-                <DropdownMenuItem 
-                  onClick={onLeaveTeam} 
-                  className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 py-3"
+                <DropdownMenuItem
+                  onClick={onLeaveTeam}
+                  className="cursor-pointer py-3 text-red-600 focus:bg-red-50 focus:text-red-700"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span className="font-semibold">Salir del Equipo</span>
@@ -136,7 +168,6 @@ export const KanbanHeader = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
         </div>
       </div>
     </header>
