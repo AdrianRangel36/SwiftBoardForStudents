@@ -5,6 +5,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCorners,
 } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { KanbanHeader, KanbanColumn, CreateTaskForm } from "./components";
@@ -297,7 +298,11 @@ export const KanbanBoard = () => {
             <p className="animate-pulse text-gray-500">Cargando tablero...</p>
           </div>
         ) : (
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragEnd={handleDragEnd}
+          >
             <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               {KANBAN_COLUMNS.map((col) => (
                 <KanbanColumn

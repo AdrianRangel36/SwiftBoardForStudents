@@ -21,15 +21,22 @@ export const KanbanColumn = ({
   onEditTask,
   onDeleteTask,
 }: KanbanColumnProps) => {
-  
-  // Configuración de la columna como zona receptora
   const { isOver, setNodeRef } = useDroppable({
-    id: id, // El ID de la columna será el nuevo status (ej. 'IN_PROGRESS')
+    id: id,
   });
 
   return (
-    <div className="flex h-[55vh] flex-col rounded-xl border border-gray-200 bg-gray-100/50 p-4 lg:h-auto lg:min-h-125">
-      <div className={`mb-4 flex items-center justify-between rounded-lg border px-3 py-2 ${color}`}>
+    <div
+      ref={setNodeRef}
+      className={`flex h-[55vh] flex-col rounded-xl border p-4 transition-all duration-200 lg:h-auto lg:min-h-[500px] ${
+        isOver
+          ? "border-indigo-300 bg-indigo-50/60 shadow-inner" // Efecto cuando la tarjeta sobrevuela TODA la columna
+          : "border-gray-200 bg-gray-100/50"
+      }`}
+    >
+      <div
+        className={`mb-4 flex items-center justify-between rounded-lg border px-3 py-2 ${color}`}
+      >
         <h3 className="font-semibold text-gray-800">{title}</h3>
         <Badge variant="secondary" className="bg-white text-gray-700 shadow-sm">
           {tasks.length}
@@ -37,13 +44,8 @@ export const KanbanColumn = ({
       </div>
 
       <ScrollArea className="flex-1 pr-3">
-        {/* Envolvemos la lista en el ref del Droppable */}
-        <div 
-          ref={setNodeRef} 
-          className={`flex flex-col gap-3 min-h-37.5 rounded-lg transition-colors p-1 ${
-            isOver ? "bg-gray-200/60" : "" // Cambio de color al pasar por encima
-          }`}
-        >
+        {/* 2. Limpiamos este div, ya no necesita el ref ni los estilos dinámicos */}
+        <div className="flex flex-col gap-3 pb-4">
           {tasks.map((task) => (
             <TaskCard
               key={task.id}
