@@ -1,6 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
-
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 import { KanbanHeader, KanbanColumn, CreateTaskForm } from "./components";
 import type { Task, TeamData, TeamMember } from "./types";
 import { KANBAN_COLUMNS } from "./types";
@@ -182,14 +188,16 @@ export const KanbanBoard = () => {
 
       const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           userId: Number(user?.id),
           teamId: Number(teamId),
         }),
       });
-      if (!response.ok)
-        throw new Error(`Error al salir del equipo:`);
+      if (!response.ok) throw new Error(`Error al salir del equipo:`);
 
       alert("Has salido del equipo exitosamente");
       window.location.href = "/dashboard";
@@ -228,6 +236,52 @@ export const KanbanBoard = () => {
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Exigimos mover el mouse 5px para arrastrar
+      },
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    // Si la soltó fuera de una columna válida
+    if (!over) return;
+
+    const taskId = Number(active.id);
+    const newStatus = over.id as Task["status"];
+
+    const task = tasks.find((t) => t.id === taskId);
+    // Si la tarea se soltó en la misma columna donde estaba, ignoramos
+    if (!task || task.status === newStatus) return;
+
+    // ACTUALIZACIÓN OPTIMISTA (La UI cambia al instante)
+    setTasks((prevTasks) =>
+      prevTasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+    );
+
+    // PETICIÓN PUT AL BACKEND
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) throw new Error("Error al mover la tarea en la BD");
+    } catch (error) {
+      console.error("Error moviendo tarea:", error);
+      // Revertir UI si falla el servidor
+      fetchTeamTasks();
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <KanbanHeader
@@ -243,19 +297,21 @@ export const KanbanBoard = () => {
             <p className="animate-pulse text-gray-500">Cargando tablero...</p>
           </div>
         ) : (
-          <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {KANBAN_COLUMNS.map((col) => (
-              <KanbanColumn
-                key={col.id}
-                id={col.id}
-                title={col.title}
-                color={col.color}
-                tasks={getTasksByStatus(col.id)}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-              />
-            ))}
-          </div>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {KANBAN_COLUMNS.map((col) => (
+                <KanbanColumn
+                  key={col.id}
+                  id={col.id}
+                  title={col.title}
+                  color={col.color}
+                  tasks={getTasksByStatus(col.id)}
+                  onEditTask={handleEditTask}
+                  onDeleteTask={handleDeleteTask}
+                />
+              ))}
+            </div>
+          </DndContext>
         )}
 
         <div ref={formRef}>
