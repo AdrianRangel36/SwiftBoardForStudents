@@ -313,6 +313,7 @@ export const KanbanBoard = () => {
                   tasks={getTasksByStatus(col.id)}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
+                  members={teamMembers}
                 />
               ))}
             </div>

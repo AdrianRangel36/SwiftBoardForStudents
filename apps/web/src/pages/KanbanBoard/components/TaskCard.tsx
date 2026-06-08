@@ -1,84 +1,152 @@
-import { MoreVertical, Pencil, Trash2, GripVertical } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@workspace/ui/components/card";
+import { useState } from "react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { MoreVertical, Pencil, Trash2, Calendar, Clock } from "lucide-react";
+
+import { Card } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import type { Task } from "../types";
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@workspace/ui/lib/utils";
+import type { Task, TeamMember } from "../types";
 
 interface TaskCardProps {
   task: Task;
+  members?: TeamMember[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: number) => void;
+  // NUEVO: Pásale esta prop desde el componente padre que hace el useSortable
+  isDragging?: boolean; 
 }
 
-export const TaskCard = ({ task, onEdit, onDelete }: TaskCardProps) => {
-  // Configuración de dnd-kit para este elemento
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id.toString(),
-    data: { task }, // Guardamos la data de la tarea por si la necesitamos al soltar
-  });
+export const TaskCard = ({ task, members = [], onEdit, onDelete, isDragging = false }: TaskCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // Convertimos las coordenadas de arrastre a CSS
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 999 : "auto", // Para que flote por encima del resto
-    touchAction: "none", // Previene problemas de scroll en móviles al arrastrar
+  const assignedMember = members.find((m) => m.id === task.assignedMemberId);
+  
+  const getInitials = (name?: string, surname?: string) => {
+    if (!name) return "?";
+    return `${name.charAt(0)}${surname ? surname.charAt(0) : ""}`.toUpperCase();
+  };
+
+  const handleCardClick = () => {
+    // Evitamos que la tarjeta intente expandirse o re-renderizarse si está en el aire
+    if (!isDragging) {
+      setIsExpanded((prev) => !prev);
+    }
+  };
+
+  // Función para detener AMBOS eventos (clic y arrastre) en botones internos
+  const stopEventPropagation = (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation();
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <Card className="border-gray-200 shadow-sm transition-all hover:border-gray-300 hover:shadow-md">
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+    <Card 
+      onClick={handleCardClick}
+      className={cn(
+        "group relative flex flex-col overflow-hidden bg-white border-gray-200 transition-all duration-200 ease-in-out",
+        // Estilos dinámicos si se está arrastrando
+        isDragging 
+          ? "opacity-60 shadow-xl scale-[1.02] cursor-grabbing ring-1 ring-blue-500/50 z-50" 
+          : "hover:border-gray-300 shadow-sm hover:shadow-md cursor-grab",
+        // Resaltado sutil si está expandida
+        isExpanded && !isDragging ? "border-blue-200/60 shadow-sm" : ""
+      )}
+    >
+      {/* === ESTADO COMPACTO (Siempre visible, padding reducido a p-3) === */}
+      <div className="flex flex-col p-3 gap-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
+            {task.name}
+          </span>
           
-          <div className="flex items-center gap-2">
-            {/* AGARRADERA (DRAG HANDLE): Aquí aplicamos los listeners para arrastrar */}
-            <div 
-              {...listeners} 
-              {...attributes} 
-              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-            >
-              <GripVertical className="h-4 w-4" />
-            </div>
-            
-            <CardTitle className="text-sm font-bold text-gray-800">
-              {task.name}
-            </CardTitle>
+          {/* Zona de control aislada del Drag and Drop */}
+          <div 
+            className="flex shrink-0" 
+            onClick={stopEventPropagation}
+            onPointerDown={stopEventPropagation} // CRÍTICO: Evita arrastrar desde el botón
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-gray-900 hover:bg-gray-100/50">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => onEdit(task)} className="cursor-pointer">
+                  <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+                  <span>Modificar</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDelete(task.id)} 
+                  className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Eliminar</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
 
-          {/* Menú de los 3 puntitos */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900">
-                <span className="sr-only">Abrir menú</span>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(task)} className="cursor-pointer">
-                <Pencil className="mr-2 h-4 w-4 text-blue-600" />
-                <span>Modificar</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(task.id)} className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700">
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Eliminar</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardHeader>
+        <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium">
+          <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-gray-100/80 rounded-sm">
+            <Calendar className="h-3 w-3 text-gray-400" />
+            <span className={new Date(task.endDate) < new Date() ? "text-red-600" : ""}>
+              {format(new Date(task.endDate), "d MMM", { locale: es })}
+            </span>
+          </div>
+          
+          <Avatar className="h-5 w-5 border border-gray-200" title={assignedMember?.user?.name || "Sin asignar"}>
+            <AvatarFallback className="text-[9px] bg-slate-100 text-slate-600 font-semibold">
+              {getInitials(assignedMember?.user?.name, assignedMember?.user?.paternalSurname)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
 
-        <CardContent className="p-4 pt-0">
-          <p className="mb-3 line-clamp-2 text-xs text-gray-500">
-            {task.description}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+      {/* === ESTADO EXPANDIDO (Animación por CSS Grid) === */}
+      <div 
+        className={cn(
+          "grid transition-all duration-300 ease-in-out",
+          // Si está expandido y NO se está arrastrando, abrimos el grid a su altura natural (1fr)
+          isExpanded && !isDragging ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+        // Prevenir que el clic en la descripción cierre la tarjeta
+        onClick={stopEventPropagation}
+        onPointerDown={stopEventPropagation}
+      >
+        <div className="overflow-hidden">
+          {/* Contenido expandido con su propio padding */}
+          <div className="p-3 pt-0 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-3">
+            {task.description && (
+              <p className="text-[11px] text-gray-600 leading-relaxed mt-2">
+                {task.description}
+              </p>
+            )}
+
+            {task.goals && (
+              <div className="bg-blue-50/50 p-2 rounded border border-blue-100/50">
+                <span className="text-[10px] uppercase font-bold text-blue-800/70 block mb-1">Objetivos</span>
+                <p className="text-[11px] text-gray-700 leading-relaxed">
+                  {task.goals}
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+              <Clock className="h-3 w-3" />
+              <span>Inició: {format(new Date(task.startDate), "dd/MM/yyyy")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 };
