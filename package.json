@@ -10,6 +10,7 @@
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
+    "@types/node": "^25.9.2",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.8.17",
@@ -24,6 +25,10 @@
     "packages/*"
   ],
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
     "react-router-dom": "^7.16.0"
   }
 }

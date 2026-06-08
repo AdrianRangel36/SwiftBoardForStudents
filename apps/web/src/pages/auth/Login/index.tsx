@@ -11,6 +11,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const Login: React.FC = () => {
   const navigate = useNavigate();
 
@@ -54,7 +55,7 @@ export const Login: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -10,6 +10,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const SignUp: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -66,7 +67,7 @@ export const SignUp: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/auth/signup", {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,8 +89,9 @@ export const SignUp: React.FC = () => {
           window.location.href = "/login";
         }, 1000);
       } else {
-
-        setError(data.message || "Error al crear la cuenta. Intenta nuevamente.");
+        setError(
+          data.message || "Error al crear la cuenta. Intenta nuevamente."
+        );
       }
     } catch (error) {
       console.error("Error en signup:", error);
@@ -121,7 +123,7 @@ export const SignUp: React.FC = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 border border-red-200">
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                 {error}
               </div>
             )}
@@ -192,11 +194,7 @@ export const SignUp: React.FC = () => {
             </div>
 
             {/* Botón de Submit */}
-            <Button 
-              type="submit" 
-              className="mt-2 w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
               {isLoading ? "Creando cuenta..." : "Crear cuenta"}
             </Button>
           </form>
