@@ -107,38 +107,43 @@ export const TaskCard = ({
             </DropdownMenu>
           </div>
         </div>
+        {!isExpanded && (
+          <div className="flex items-center justify-between text-[11px] font-medium text-gray-500">
+            <div className="flex items-center gap-1.5 rounded-sm bg-gray-100/80 px-1.5 py-0.5">
+              <Calendar className="h-3 w-3 text-gray-400" />
+              <span
+                className={
+                  new Date(task.endDate) < new Date() ? "text-red-600" : ""
+                }
+              >
+                {format(new Date(task.endDate), "d MMM", { locale: es })}
+              </span>
+            </div>
 
-        <div className="flex items-center justify-between text-[11px] font-medium text-gray-500">
-          <div className="flex items-center gap-1.5 rounded-sm bg-gray-100/80 px-1.5 py-0.5">
-            <Calendar className="h-3 w-3 text-gray-400" />
-            <span
-              className={
-                new Date(task.endDate) < new Date() ? "text-red-600" : ""
-              }
-            >
-              {format(new Date(task.endDate), "d MMM", { locale: es })}
-            </span>
+            <div className="flex gap-1.5">
+              <span>
+                {assignedMember?.user?.name}{" "}
+                {assignedMember?.user?.paternalSurname}
+              </span>
+              <Avatar
+                className="h-5 w-5 border border-gray-200"
+                title={assignedMember?.user?.name || "Sin asignar"}
+              >
+                <AvatarFallback className="bg-slate-100 text-[9px] font-semibold text-slate-600">
+                  {getInitials(
+                    assignedMember?.user?.name,
+                    assignedMember?.user?.paternalSurname
+                  )}
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </div>
-
-          <Avatar
-            className="h-5 w-5 border border-gray-200"
-            title={assignedMember?.user?.name || "Sin asignar"}
-          >
-            <AvatarFallback className="bg-slate-100 text-[9px] font-semibold text-slate-600">
-              {getInitials(
-                assignedMember?.user?.name,
-                assignedMember?.user?.paternalSurname
-              )}
-            </AvatarFallback>
-          </Avatar>
-        </div>
+        )}
       </div>
 
-      {/* === ESTADO EXPANDIDO (Animación por CSS Grid) === */}
       <div
         className={cn(
           "grid transition-all duration-300 ease-in-out",
-          // Si está expandido y NO se está arrastrando, abrimos el grid a su altura natural (1fr)
           isExpanded && !isDragging
             ? "grid-rows-[1fr] opacity-100"
             : "grid-rows-[0fr] opacity-0"
@@ -151,7 +156,7 @@ export const TaskCard = ({
           {/* Contenido expandido con su propio padding */}
           <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 p-3 pt-0">
             {task.description && (
-              <p className="mt-2 text-[11px] leading-relaxed text-gray-600">
+              <p className="mt-2 text-[14px] leading-relaxed text-gray-600">
                 {task.description}
               </p>
             )}
@@ -169,15 +174,32 @@ export const TaskCard = ({
 
             <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
               <Clock className="h-3 w-3" />
-              <span>
-                Inició: {format(new Date(task.startDate), "dd/MM/yyyy")}
+              <span className="text-sm font-semibold">
+                Inicio: {format(new Date(task.startDate), "dd/MM/yyyy")}
               </span>
             </div>
             <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
               <Clock className="h-3 w-3" />
-              <span>
-                Fecha de entrega:{" "}
-                {format(new Date(task.endDate), "dd/MM/yyyy")}
+              <span className="text-sm font-semibold">
+                Fecha de entrega: {format(new Date(task.endDate), "dd/MM/yyyy")}
+              </span>
+            </div>
+
+            <div className="flex  gap-1.5">
+              <Avatar
+                className="h-6 w-6 border border-gray-200"
+                title={assignedMember?.user?.name || "Sin asignar"}
+              >
+                <AvatarFallback className="bg-slate-100 text-[9px] font-semibold text-slate-600">
+                  {getInitials(
+                    assignedMember?.user?.name,
+                    assignedMember?.user?.paternalSurname
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-semibold">
+                {assignedMember?.user?.name}{" "}
+                {assignedMember?.user?.paternalSurname}
               </span>
             </div>
           </div>
