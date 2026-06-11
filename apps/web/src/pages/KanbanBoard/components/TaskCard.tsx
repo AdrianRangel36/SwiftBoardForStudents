@@ -13,27 +13,29 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { cn } from "@workspace/ui/lib/utils";
-import type { Task, TeamMember } from "../types";
+
+import type { Task } from "../types";
+import { useKanbanStore } from "../useKanbanStore";
 
 interface TaskCardProps {
   task: Task;
-  members?: TeamMember[];
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: number) => void;
-  // NUEVO: Pásale esta prop desde el componente padre que hace el useSortable
   isDragging?: boolean;
 }
 
 export const TaskCard = ({
   task,
-  members = [],
-  onEdit,
-  onDelete,
   isDragging = false,
 }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const assignedMember = members.find((m) => m.id === task.assignedMemberId);
+  // Consumimos el Store para miembros y acciones
+  const { teamMembers, setTaskToEdit, deleteTask } = useKanbanStore((state) => ({
+    teamMembers: state.teamMembers,
+    setTaskToEdit: state.setTaskToEdit,
+    deleteTask: state.deleteTask,
+  }));
+
+  const assignedMember = teamMembers.find((m) => m.id === task.assignedMemberId);
 
   const getInitials = (name?: string, surname?: string) => {
     if (!name) return "?";
@@ -41,13 +43,11 @@ export const TaskCard = ({
   };
 
   const handleCardClick = () => {
-    // Evitamos que la tarjeta intente expandirse o re-renderizarse si está en el aire
     if (!isDragging) {
       setIsExpanded((prev) => !prev);
     }
   };
 
-  // Función para detener AMBOS eventos (clic y arrastre) en botones internos
   const stopEventPropagation = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
   };
@@ -57,26 +57,22 @@ export const TaskCard = ({
       onClick={handleCardClick}
       className={cn(
         "group relative flex flex-col overflow-hidden border-gray-200 bg-white transition-all duration-200 ease-in-out",
-        // Estilos dinámicos si se está arrastrando
         isDragging
           ? "z-50 scale-[1.02] cursor-grabbing opacity-60 shadow-xl ring-1 ring-blue-500/50"
           : "cursor-grab shadow-sm hover:border-gray-300 hover:shadow-md",
-        // Resaltado sutil si está expandida
         isExpanded && !isDragging ? "border-blue-200/60 shadow-sm" : ""
       )}
     >
-      {/* === ESTADO COMPACTO (Siempre visible, padding reducido a p-3) === */}
       <div className="flex flex-col gap-2.5 p-3">
         <div className="flex items-start justify-between gap-2">
           <span className="line-clamp-2 text-sm leading-tight font-semibold text-gray-800">
             {task.name}
           </span>
 
-          {/* Zona de control aislada del Drag and Drop */}
           <div
             className="flex shrink-0"
             onClick={stopEventPropagation}
-            onPointerDown={stopEventPropagation} // CRÍTICO: Evita arrastrar desde el botón
+            onPointerDown={stopEventPropagation}
           >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -90,14 +86,14 @@ export const TaskCard = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
-                  onClick={() => onEdit(task)}
+                  onClick={() => setTaskToEdit(task)} // Ejecuta la acción del Store
                   className="cursor-pointer"
                 >
                   <Pencil className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Modificar</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onDelete(task.id)}
+                  onClick={() => deleteTask(task.id)} // Ejecuta la acción del Store
                   className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -148,12 +144,10 @@ export const TaskCard = ({
             ? "grid-rows-[1fr] opacity-100"
             : "grid-rows-[0fr] opacity-0"
         )}
-        // Prevenir que el clic en la descripción cierre la tarjeta
         onClick={stopEventPropagation}
         onPointerDown={stopEventPropagation}
       >
         <div className="overflow-hidden">
-          {/* Contenido expandido con su propio padding */}
           <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 p-3 pt-0">
             {task.description && (
               <p className="mt-2 text-[14px] leading-relaxed text-gray-600">
