@@ -3,7 +3,7 @@ import { CreateTeamDialog } from "./CreateTeamDialog";
 import { TeamCard } from "./TeamCard";
 import { EmptyState } from "./EmptyState";
 import { LoadingState } from "./LoadingState";
-import type { Team } from "../types";
+import type { Team } from "@/interfaces";
 
 interface TeamsGridProps {
   teams: Team[];

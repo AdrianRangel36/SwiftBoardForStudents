@@ -4,7 +4,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@workspace/ui/components/avatar";
-import type { UserData } from "../types";
+import type { UserData } from "@/interfaces";
 
 interface DashboardHeaderProps {
   user: UserData | null;

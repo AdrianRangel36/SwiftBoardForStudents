@@ -22,15 +22,8 @@ import {
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
 
-import type { Task, TeamMember } from "../types";
-
-interface CreateTaskFormProps {
-  teamId: string | undefined;
-  teamMembers: TeamMember[];
-  onTaskCreated: () => void;
-  taskToEdit?: Task | null;
-  onCancelEdit?: () => void;
-}
+import type { Task } from "../types";
+import { useKanbanStore } from "../useKanbanStore";
 
 const KANBAN_COLUMNS = [
   { id: "TO_DO", title: "Por Hacer" },
@@ -40,13 +33,15 @@ const KANBAN_COLUMNS = [
 ] as const;
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-export const CreateTaskForm = ({
-  teamId,
-  teamMembers,
-  onTaskCreated,
-  taskToEdit,
-  onCancelEdit,
-}: CreateTaskFormProps) => {
+
+export const CreateTaskForm = () => {
+  // ✅ EXTRAER UNO POR UNO
+  const teamId = useKanbanStore((state) => state.teamId);
+  const teamMembers = useKanbanStore((state) => state.teamMembers);
+  const taskToEdit = useKanbanStore((state) => state.taskToEdit);
+  const setTaskToEdit = useKanbanStore((state) => state.setTaskToEdit);
+  const fetchTeamTasks = useKanbanStore((state) => state.fetchTeamTasks);
+
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
   const [newTaskGoals, setNewTaskGoals] = useState("");
@@ -56,6 +51,7 @@ export const CreateTaskForm = ({
   const [newTaskEndDate, setNewTaskEndDate] = useState<Date>();
   const [isCreating, setIsCreating] = useState(false);
 
+  // Efecto que reacciona cuando "taskToEdit" cambia en el Store global
   useEffect(() => {
     if (taskToEdit) {
       setNewTaskName(taskToEdit.name);
@@ -89,7 +85,8 @@ export const CreateTaskForm = ({
       !newTaskGoals ||
       !newTaskAssignee ||
       !newTaskStartDate ||
-      !newTaskEndDate
+      !newTaskEndDate ||
+      !teamId
     ) {
       alert("Por favor completa todos los campos");
       return;
@@ -124,19 +121,18 @@ export const CreateTaskForm = ({
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `Error saving task: ${response.status} ${response.statusText}`,
-          errorText
-        );
-        throw new Error(
-          `Error al guardar la tarea: ${response.status} ${response.statusText}`
-        );
+        throw new Error(`Error al guardar la tarea: ${response.status}`);
       }
 
       resetForm();
-      onTaskCreated();
-      if (onCancelEdit) onCancelEdit();
+
+      // Actualizamos las tareas en el estado global
+      fetchTeamTasks(teamId);
+
+      // Limpiamos el modo edición globalmente
+      if (taskToEdit) {
+        setTaskToEdit(null);
+      }
     } catch (error) {
       console.error("Error saving task:", error);
       alert(
@@ -160,7 +156,7 @@ export const CreateTaskForm = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onCancelEdit}
+            onClick={() => setTaskToEdit(null)} // Cancelamos usando Zustand
             className="text-gray-500"
           >
             <X className="mr-2 h-4 w-4" /> Cancelar Edición
@@ -296,7 +292,6 @@ export const CreateTaskForm = ({
           </Popover>
         </div>
 
-        {/* Botón Guardar modificado para cambiar de texto */}
         <div className="flex flex-col justify-end lg:col-span-2">
           <Button
             type="submit"
