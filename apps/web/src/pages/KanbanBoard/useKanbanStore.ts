@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { KanbanState, Task, TeamMember } from "./types";
+import type { KanbanState, Task } from "./types";
+import type { TeamMember } from "@/interfaces";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -15,7 +16,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   // Inicializa todo cuando el usuario entra a la vista
   initialize: async (teamId: string) => {
     set({ teamId, isLoading: true });
-    
+
     // Leer el usuario de localstorage (solo se hace una vez aquí)
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -26,20 +27,24 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
     await Promise.all([
       get().fetchTeamTasks(teamId),
       get().fetchTeamMembers(teamId),
+      
     ]);
-    
+
     set({ isLoading: false });
   },
 
   fetchTeamTasks: async (teamId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/tasks/team-tasks/${teamId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/tasks/team-tasks/${teamId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!response.ok) throw new Error("Error fetching tasks");
-      
+
       const text = await response.text();
       const data = text ? JSON.parse(text) : [];
       set({ tasks: Array.isArray(data) ? data : [] });
@@ -52,17 +57,22 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   fetchTeamMembers: async (teamId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/team-members/findallteam/${teamId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/team-members/findallteam/${teamId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!response.ok) throw new Error("Error fetching members");
 
       const text = await response.text();
       const allMembers: TeamMember[] = text ? JSON.parse(text) : [];
-      
+
       if (Array.isArray(allMembers)) {
-        const membersOfThisTeam = allMembers.filter((m) => m.teamId === Number(teamId));
+        const membersOfThisTeam = allMembers.filter(
+          (m) => m.teamId === Number(teamId)
+        );
         set({ teamMembers: membersOfThisTeam });
       } else {
         set({ teamMembers: [] });
@@ -94,11 +104,10 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
 
       // Actualizar la UI localmente sin volver a hacer fetch (más rápido)
       const { tasks, taskToEdit } = get();
-      set({ 
-        tasks: tasks.filter(t => t.id !== taskId),
-        taskToEdit: taskToEdit?.id === taskId ? null : taskToEdit 
+      set({
+        tasks: tasks.filter((t) => t.id !== taskId),
+        taskToEdit: taskToEdit?.id === taskId ? null : taskToEdit,
       });
-      
     } catch (error) {
       console.error("Error eliminando la tarea:", error);
       alert("Hubo un problema al intentar eliminar la tarea.");
@@ -108,12 +117,13 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   moveTask: async (taskId: number, newStatus: Task["status"]) => {
     const { tasks, fetchTeamTasks, teamId } = get();
     const task = tasks.find((t) => t.id === taskId);
-    
+
     if (!task || task.status === newStatus) return;
 
-    // ACTUALIZACIÓN OPTIMISTA (La UI cambia al instante)
     set({
-      tasks: tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      tasks: tasks.map((t) =>
+        t.id === taskId ? { ...t, status: newStatus } : t
+      ),
     });
 
     // PETICIÓN PUT AL BACKEND
@@ -131,8 +141,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       if (!response.ok) throw new Error("Error al mover la tarea en la BD");
     } catch (error) {
       console.error("Error moviendo tarea:", error);
-      // Revertir UI si falla el servidor haciendo fetch de nuevo
       if (teamId) fetchTeamTasks(teamId);
     }
-  }
+  },
 }));

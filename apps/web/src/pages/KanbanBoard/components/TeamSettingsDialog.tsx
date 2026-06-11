@@ -17,14 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import type { TeamMember } from "../types";
+import type { TeamMember } from "@/interfaces";
 
 interface TeamSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: number;
   members: TeamMember[];
-  currentUserRole: "OWNER" | "ADMIN" | "MEMBER" | undefined;
+  currentUserRole: "OWNER" | "ADMIN" | "MEMBER" | "PENDING" | undefined;
 }
 
 export const TeamSettingsDialog = ({

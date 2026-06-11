@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import {
   ArrowLeft,
   Trash2,
@@ -17,41 +18,97 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import type { TeamMember } from "../types";
-import { useState } from "react";
 import { TeamSettingsDialog } from "./TeamSettingsDialog";
-import type { Team } from "@/pages/Dashboard/types";
+import { useKanbanStore } from "../useKanbanStore";
+import type { Team, TeamMember } from "@/interfaces";
 
-interface KanbanHeaderProps {
-  team: Team
-  teamMembers: TeamMember[];
-  onDeleteTeam?: () => void;
-  onLeaveTeam?: () => void;
-  onUpdateTeam?: () => void;
-}
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-export const KanbanHeader = ({
-  team,
-  teamMembers = [],
-  onDeleteTeam,
-  onLeaveTeam,
-}: KanbanHeaderProps) => {
+export const KanbanHeader = () => {
   const navigate = useNavigate();
+  const { teamId } = useParams<{ teamId: string }>();
+  
+  // Obtenemos los datos del equipo del layout de React Router
+  const teamData = useOutletContext<Team>();
 
-  const storedUser = localStorage.getItem("user");
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
-  const currentMember = teamMembers.find((m) => m.userId === currentUser?.id);
-  const isOwnerOrAdmin =
-    currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
+  // Consumimos el estado global de Zustand
+  const { teamMembers, user } = useKanbanStore((state) => ({
+    teamMembers: state.teamMembers,
+    user: state.user,
+  }));
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const getInitials = (member: TeamMember) => {
+  // Lógica de permisos calculada localmente con los datos del Store
+  const currentMember = teamMembers.find((m) => m.userId === user?.id);
+  const isOwnerOrAdmin =
+    currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
+
+  const getInitials = (member: TeamMember ) => {
     if (!member.user) return "NA";
     return `${member.user.name.charAt(0)}${member.user.paternalSurname.charAt(0)}`.toUpperCase();
   };
 
   const displayMembers = teamMembers.slice(0, 3);
   const remainingMembersCount = teamMembers.length - 3;
+
+  // Acciones de equipo mudadas desde index.tsx
+  const handleDeleteTeam = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar este equipo? Esta acción es irreversible."
+    );
+    if (!isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Error al eliminar el equipo");
+
+      alert("Equipo eliminado exitosamente");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error eliminando el equipo:", error);
+      alert("Hubo un problema al intentar eliminar el equipo.");
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    const isConfirmed = window.confirm(
+      "¿Estás seguro de que deseas salir de este equipo?"
+    );
+    if (!isConfirmed) return;
+    try {
+      const token = localStorage.getItem("token");
+
+      const teamMember = teamMembers.find((m) => m.userId === Number(user?.id));
+      if (!teamMember) {
+        throw new Error("No se encontró tu membresía en el equipo");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: Number(user?.id),
+          teamId: Number(teamId),
+        }),
+      });
+      if (!response.ok) throw new Error(`Error al salir del equipo:`);
+
+      alert("Has salido del equipo exitosamente");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error al salir del equipo:", error);
+      alert("Hubo un problema al intentar salir del equipo.");
+    }
+  };
 
   return (
     <>
@@ -67,7 +124,7 @@ export const KanbanHeader = ({
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {team.name || "Equipo"}
+              {teamData?.name || "Equipo"}
             </h1>
             <p className="flex items-center text-sm text-gray-500">
               <Users className="mr-1 h-4 w-4" /> Tablero de equipo
@@ -76,9 +133,7 @@ export const KanbanHeader = ({
         </div>
 
         <div className="flex items-center justify-between gap-6 md:justify-end">
-          {/* SECCIÓN DE USUARIOS Y MENÚ */}
           <div className="flex items-center">
-            {/* Grupo de Avatares superpuestos (-space-x-3) */}
             <div className="flex -space-x-3">
               {displayMembers.map((member) => (
                 <Avatar
@@ -91,7 +146,6 @@ export const KanbanHeader = ({
                 </Avatar>
               ))}
 
-              {/* Burbuja extra si hay más de 3 miembros */}
               {remainingMembersCount > 0 && (
                 <Avatar className="h-10 w-10 border-2 border-white">
                   <AvatarFallback className="bg-gray-100 text-sm font-semibold text-gray-700">
@@ -101,7 +155,6 @@ export const KanbanHeader = ({
               )}
             </div>
 
-            {/* Menú Desplegable de Miembros y Acciones */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -118,7 +171,6 @@ export const KanbanHeader = ({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Lista dinámica de miembros */}
                 {teamMembers.map((member) => (
                   <DropdownMenuItem
                     key={member.id}
@@ -144,7 +196,6 @@ export const KanbanHeader = ({
 
                 <DropdownMenuSeparator />
 
-                {/* Renderizado Condicional del Botón Peligroso */}
                 {isOwnerOrAdmin ? (
                   <>
                     <DropdownMenuItem
@@ -163,7 +214,7 @@ export const KanbanHeader = ({
                     <DropdownMenuSeparator />
 
                     <DropdownMenuItem
-                      onClick={onDeleteTeam}
+                      onClick={handleDeleteTeam}
                       className="cursor-pointer py-3 text-red-600 focus:bg-red-50 focus:text-red-700"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -172,7 +223,7 @@ export const KanbanHeader = ({
                   </>
                 ) : (
                   <DropdownMenuItem
-                    onClick={onLeaveTeam}
+                    onClick={handleLeaveTeam}
                     className="cursor-pointer py-3 text-red-600 focus:bg-red-50 focus:text-red-700"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -184,10 +235,12 @@ export const KanbanHeader = ({
           </div>
         </div>
       </header>
+      
+      {/* El diálogo de configuraciones ahora recibe los datos limpios directamente */}
       <TeamSettingsDialog
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
-        teamId={team.id}
+        teamId={Number(teamId)}
         members={teamMembers}
         currentUserRole={currentMember?.role}
       />
