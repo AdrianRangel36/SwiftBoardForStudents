@@ -35,7 +35,6 @@ export const KanbanHeader = ({
   teamMembers = [],
   onDeleteTeam,
   onLeaveTeam,
-  onUpdateTeam,
 }: KanbanHeaderProps) => {
   const navigate = useNavigate();
 
@@ -149,7 +148,6 @@ export const KanbanHeader = ({
                 {isOwnerOrAdmin ? (
                   <>
                     <DropdownMenuItem
-                      onClick={onUpdateTeam}
                       className="cursor-pointer"
                       onSelect={(e) => {
                         e.preventDefault();

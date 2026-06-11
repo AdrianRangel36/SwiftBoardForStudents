@@ -208,34 +208,34 @@ export const KanbanBoard = () => {
     }
   };
 
-  const handleUpdateTeam = async () => {
-    const newTeamName = prompt(
-      "Ingresa el nuevo nombre del equipo:",
-      teamData?.name
-    );
-    if (!newTeamName || newTeamName.trim() === "") return;
+  // const handleUpdateTeam = async () => {
+  //   const newTeamName = prompt(
+  //     "Ingresa el nuevo nombre del equipo:",
+  //     teamData?.name
+  //   );
+  //   if (!newTeamName || newTeamName.trim() === "") return;
 
-    try {
-      const token = localStorage.getItem("token");
+  //   try {
+  //     const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name: newTeamName.trim() }),
-      });
+  //     const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
+  //       method: "PUT",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ name: newTeamName.trim() }),
+  //     });
 
-      if (!response.ok) throw new Error("Error al actualizar el equipo");
+  //     if (!response.ok) throw new Error("Error al actualizar el equipo");
 
-      alert("Equipo actualizado exitosamente");
-      window.location.reload();
-    } catch (error) {
-      console.error("Error actualizando el equipo:", error);
-      alert("Hubo un problema al intentar actualizar el equipo.");
-    }
-  };
+  //     alert("Equipo actualizado exitosamente");
+  //     window.location.reload();
+  //   } catch (error) {
+  //     console.error("Error actualizando el equipo:", error);
+  //     alert("Hubo un problema al intentar actualizar el equipo.");
+  //   }
+  // };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -290,7 +290,6 @@ export const KanbanBoard = () => {
         teamMembers={teamMembers}
         onDeleteTeam={handleDeleteTeam}
         onLeaveTeam={handleLeaveTeam}
-        onUpdateTeam={handleUpdateTeam}
       />
       <main className="flex flex-1 flex-col p-6">
         {isLoading ? (
