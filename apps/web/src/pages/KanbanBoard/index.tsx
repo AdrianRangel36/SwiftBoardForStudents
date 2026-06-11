@@ -286,7 +286,7 @@ export const KanbanBoard = () => {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <KanbanHeader
-        teamName={teamData?.name || "Equipo"}
+        team={teamData}
         teamMembers={teamMembers}
         onDeleteTeam={handleDeleteTeam}
         onLeaveTeam={handleLeaveTeam}
