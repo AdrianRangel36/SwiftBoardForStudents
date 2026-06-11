@@ -1,5 +1,5 @@
+import type { Team, UserData } from "@/interfaces";
 import { useState, useCallback, useEffect } from "react";
-import type { Team, UserData } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 

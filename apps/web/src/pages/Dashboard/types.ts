@@ -1,15 +1,4 @@
-export interface Team {
-  id: number;
-  name: string;
-}
-
-export interface UserData {
-  id: number;
-  name: string;
-  paternalSurname: string;
-  maternalSurname: string;
-  email: string;
-}
+import type { Team, UserData } from "@/interfaces";
 
 export interface DashboardContextType {
   teams: Team[];

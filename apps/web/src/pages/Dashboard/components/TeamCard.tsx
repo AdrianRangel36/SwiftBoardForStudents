@@ -5,7 +5,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@workspace/ui/components/card";
-import type { Team } from "../types";
+import type { Team } from "@/interfaces";
 
 interface TeamCardProps {
   team: Team;

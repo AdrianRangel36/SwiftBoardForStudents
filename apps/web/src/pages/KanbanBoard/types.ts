@@ -1,3 +1,5 @@
+import type { TeamMember, UserData } from "@/interfaces";
+
 export interface Task {
   id: number;
   assignedMemberId: number;
@@ -10,21 +12,6 @@ export interface Task {
   endDate: string;
 }
 
-export interface TeamData {
-  id: number;
-  name: string;
-}
-
-export interface TeamMember {
-  id: number;
-  userId: number;
-  teamId: number;
-  role: "OWNER" | "ADMIN" | "MEMBER";
-  user?: {
-    name: string;
-    paternalSurname: string;
-  };
-}
 
 export const KANBAN_COLUMNS = [
   { id: "TO_DO", title: "Por Hacer", color: "bg-slate-200 border-slate-300" },
@@ -40,3 +27,21 @@ export const KANBAN_COLUMNS = [
   },
   { id: "DONE", title: "Completado", color: "bg-green-100 border-green-200" },
 ] as const;
+
+export interface KanbanState {
+  // --- ESTADO ---
+  tasks: Task[];
+  teamMembers: TeamMember[];
+  isLoading: boolean;
+  taskToEdit: Task | null;
+  user: UserData | null;
+  teamId: string | null;
+
+  // --- ACCIONES ---
+  initialize: (teamId: string) => Promise<void>;
+  fetchTeamTasks: (teamId: string) => Promise<void>;
+  fetchTeamMembers: (teamId: string) => Promise<void>;
+  setTaskToEdit: (task: Task | null) => void;
+  deleteTask: (taskId: number) => Promise<void>;
+  moveTask: (taskId: number, newStatus: Task["status"]) => Promise<void>;
+}
