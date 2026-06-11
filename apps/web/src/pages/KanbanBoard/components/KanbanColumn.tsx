@@ -57,8 +57,9 @@ export const KanbanColumn = ({
   color,
 }: KanbanColumnProps) => {
   
-  // Extraemos y filtramos las tareas correspondientes a ESTA columna directamente de Zustand
-  const tasks = useKanbanStore((state) => state.tasks.filter((t) => t.status === id));
+  // EXTRAER ARREGLO COMPLETO Y FILTRARLO FUERA DEL HOOK
+  const allTasks = useKanbanStore((state) => state.tasks);
+  const tasks = allTasks.filter((t) => t.status === id);
 
   const { isOver, setNodeRef } = useDroppable({
     id: id,

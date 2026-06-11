@@ -13,14 +13,11 @@ import { KANBAN_COLUMNS, type Task } from "./types";
 import { useKanbanStore } from "./useKanbanStore";
 
 export const KanbanBoard = () => {
-  const { teamId } = useParams<{ teamId: string }>();
+const { teamId } = useParams<{ teamId: string }>();
 
-  // Extraemos SOLO lo que este componente padre necesita del store
-  const { initialize, isLoading, moveTask } = useKanbanStore((state) => ({
-    initialize: state.initialize,
-    isLoading: state.isLoading,
-    moveTask: state.moveTask,
-  }));
+  const initialize = useKanbanStore((state) => state.initialize);
+  const isLoading = useKanbanStore((state) => state.isLoading);
+  const moveTask = useKanbanStore((state) => state.moveTask);
 
   // Disparamos la carga inicial de datos cuando cambia el teamId
   useEffect(() => {

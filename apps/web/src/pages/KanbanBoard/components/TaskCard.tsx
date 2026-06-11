@@ -22,20 +22,17 @@ interface TaskCardProps {
   isDragging?: boolean;
 }
 
-export const TaskCard = ({
-  task,
-  isDragging = false,
-}: TaskCardProps) => {
+export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Consumimos el Store para miembros y acciones
-  const { teamMembers, setTaskToEdit, deleteTask } = useKanbanStore((state) => ({
-    teamMembers: state.teamMembers,
-    setTaskToEdit: state.setTaskToEdit,
-    deleteTask: state.deleteTask,
-  }));
+  // ✅ EXTRAER UNO POR UNO
+  const teamMembers = useKanbanStore((state) => state.teamMembers);
+  const setTaskToEdit = useKanbanStore((state) => state.setTaskToEdit);
+  const deleteTask = useKanbanStore((state) => state.deleteTask);
 
-  const assignedMember = teamMembers.find((m) => m.id === task.assignedMemberId);
+  const assignedMember = teamMembers.find(
+    (m) => m.id === task.assignedMemberId
+  );
 
   const getInitials = (name?: string, surname?: string) => {
     if (!name) return "?";
@@ -179,7 +176,7 @@ export const TaskCard = ({
               </span>
             </div>
 
-            <div className="flex  gap-1.5">
+            <div className="flex gap-1.5">
               <Avatar
                 className="h-6 w-6 border border-gray-200"
                 title={assignedMember?.user?.name || "Sin asignar"}

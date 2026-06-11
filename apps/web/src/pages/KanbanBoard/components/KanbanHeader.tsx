@@ -31,11 +31,9 @@ export const KanbanHeader = () => {
   // Obtenemos los datos del equipo del layout de React Router
   const teamData = useOutletContext<Team>();
 
-  // Consumimos el estado global de Zustand
-  const { teamMembers, user } = useKanbanStore((state) => ({
-    teamMembers: state.teamMembers,
-    user: state.user,
-  }));
+  // EXTRAER UNO POR UNO
+  const teamMembers = useKanbanStore((state) => state.teamMembers);
+  const user = useKanbanStore((state) => state.user);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 

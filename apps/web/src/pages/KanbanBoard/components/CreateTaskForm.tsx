@@ -35,15 +35,12 @@ const KANBAN_COLUMNS = [
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const CreateTaskForm = () => {
-  // Consumimos el estado y las acciones globales desde Zustand
-  const { teamId, teamMembers, taskToEdit, setTaskToEdit, fetchTeamTasks } =
-    useKanbanStore((state) => ({
-      teamId: state.teamId,
-      teamMembers: state.teamMembers,
-      taskToEdit: state.taskToEdit,
-      setTaskToEdit: state.setTaskToEdit,
-      fetchTeamTasks: state.fetchTeamTasks,
-    }));
+  // ✅ EXTRAER UNO POR UNO
+  const teamId = useKanbanStore((state) => state.teamId);
+  const teamMembers = useKanbanStore((state) => state.teamMembers);
+  const taskToEdit = useKanbanStore((state) => state.taskToEdit);
+  const setTaskToEdit = useKanbanStore((state) => state.setTaskToEdit);
+  const fetchTeamTasks = useKanbanStore((state) => state.fetchTeamTasks);
 
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
