@@ -3,7 +3,7 @@ export type teamRole = "OWNER" | "ADMIN" | "MEMBER" | "PENDING";
 export interface Team {
   teamId: number;
   name: string;
-  userRole: teamRole;
+  role: teamRole;
 }
 
 export interface UserData {
