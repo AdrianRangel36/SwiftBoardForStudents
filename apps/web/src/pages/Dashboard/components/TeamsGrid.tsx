@@ -37,7 +37,7 @@ export const TeamsGrid: React.FC<TeamsGridProps> = ({
       ) : (
         teams.map((team) => (
           <TeamCard
-            key={team.id}
+            key={team.teamId}
             team={team}
             onClick={onTeamClick}
           />

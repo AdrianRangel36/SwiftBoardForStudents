@@ -8,7 +8,6 @@ export const useDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserData | null>(null);
 
-
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -32,7 +31,7 @@ export const useDashboard = () => {
         }
 
         const response = await fetch(
-          `${API_BASE_URL}/team/userTeams/${userId}`,
+          `${API_BASE_URL}/team-members/userTeams/${userId}`,
           {
             method: "GET",
             headers: {

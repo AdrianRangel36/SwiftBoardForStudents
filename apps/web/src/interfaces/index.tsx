@@ -1,6 +1,9 @@
+export type teamRole = "OWNER" | "ADMIN" | "MEMBER" | "PENDING";
+
 export interface Team {
-  id: number;
+  teamId: number;
   name: string;
+  userRole: teamRole;
 }
 
 export interface UserData {
@@ -15,7 +18,7 @@ export interface TeamMember {
   id: number;
   userId: number;
   teamId: number;
-  role: "OWNER" | "ADMIN" | "MEMBER" | "PENDING";
+  role: teamRole;
   user?: {
     name: string;
     paternalSurname: string;

@@ -73,6 +73,7 @@ export const TeamSettingsDialog = ({
 
       if (!responseTeam.ok) throw new Error(`Error al invitar miembro`);
       setInviteEmail("");
+      alert("Usuario invitado exitosamente");
     } catch (error) {
       console.error("Error al invitar usuario", error);
     } finally {
