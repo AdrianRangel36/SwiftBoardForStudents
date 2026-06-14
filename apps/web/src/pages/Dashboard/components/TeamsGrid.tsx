@@ -3,14 +3,12 @@ import { CreateTeamDialog } from "./CreateTeamDialog";
 import { TeamCard } from "./TeamCard";
 import { EmptyState } from "./EmptyState";
 import { LoadingState } from "./LoadingState";
-import type { Team } from "@/interfaces";
 import { InviteCard } from "./InviteCard";
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../hooks";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 interface TeamsGridProps {
-  teams: Team[];
   isLoading: boolean;
   onCreateTeam: (teamName: string) => Promise<void>;
   isDialogOpen: boolean;
