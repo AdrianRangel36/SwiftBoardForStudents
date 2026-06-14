@@ -52,10 +52,22 @@ export const TeamsGrid: React.FC<TeamsGridProps> = ({
     }
   };
   const handleRejectInvite = async (teamId: number) => {
+    const token = localStorage.getItem("token");
     try {
-      // API call a NestJS: api.delete(`/team/${teamId}/members/reject`);
-      console.log("Rechazando invitación al equipo", teamId);
-      // if (onRefetchTeams) onRefetchTeams(); // Refrescar vista
+      const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          teamId: teamId,
+        }),
+      });
+
+      if (!response.ok) throw Error("Error al aceptar la invitación");
+      fetchTeams();
     } catch (error) {
       console.error("Error al rechazar", error);
     }
