@@ -18,7 +18,9 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import type { TeamMember } from "@/interfaces";
+import { useKanbanStore } from "../useKanbanStore";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 interface TeamSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,26 +32,48 @@ interface TeamSettingsDialogProps {
 export const TeamSettingsDialog = ({
   isOpen,
   onOpenChange,
-  teamId,
   members,
   currentUserRole,
 }: TeamSettingsDialogProps) => {
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<string>("MEMBER");
   const [isLoading, setIsLoading] = useState(false);
+  const teamId = useKanbanStore((state) => state.teamId);
   const canManageTeam =
     currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   const handleInvite = async (e: React.SubmitEvent) => {
     e.preventDefault();
-    if (!inviteEmail) return;
-
+    if (!inviteEmail || !teamId) return;
     try {
       setIsLoading(true);
-      // const response = await api.post(`/team/${teamId}/members`, { email: inviteEmail, role: inviteRole });
+      const token = localStorage.getItem("token");
+      const responseUsers = await fetch(
+        `${API_BASE_URL}/users/search/${inviteEmail}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!responseUsers.ok) throw new Error(`El Usuario no existe`);
+      const data = await responseUsers.json();
+      const inviteId = data.id;
+      const responseTeam = await fetch(`${API_BASE_URL}/team-members/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: Number(inviteId),
+          teamId: Number(teamId),
+          role: "PENDING",
+        }),
+      });
 
-      console.log(`Invitando a ${inviteEmail} como ${inviteRole}`);
+      if (!responseTeam.ok) throw new Error(`Error al invitar miembro`);
       setInviteEmail("");
+      alert("Usuario invitado exitosamente");
     } catch (error) {
       console.error("Error al invitar usuario", error);
     } finally {
@@ -99,15 +123,6 @@ export const TeamSettingsDialog = ({
                   className="flex-1 bg-white"
                   disabled={isLoading}
                 />
-                <Select value={inviteRole} onValueChange={setInviteRole}>
-                  <SelectTrigger className="w-32.5 bg-white">
-                    <SelectValue placeholder="Rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MEMBER">Miembro</SelectItem>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Button type="submit" disabled={isLoading || !inviteEmail}>
                   Invitar
                 </Button>

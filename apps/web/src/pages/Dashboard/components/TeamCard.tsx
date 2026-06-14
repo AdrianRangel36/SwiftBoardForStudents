@@ -16,7 +16,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, onClick }) => {
   return (
     <Card
       className="min-h-40 cursor-pointer transition-shadow hover:shadow-md"
-      onClick={() => onClick(team.id)}
+      onClick={() => onClick(team.teamId)}
     >
       <CardHeader>
         <CardTitle className="text-lg">{team.name}</CardTitle>

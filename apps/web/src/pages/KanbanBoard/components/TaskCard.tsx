@@ -25,7 +25,6 @@ interface TaskCardProps {
 export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // ✅ EXTRAER UNO POR UNO
   const teamMembers = useKanbanStore((state) => state.teamMembers);
   const setTaskToEdit = useKanbanStore((state) => state.setTaskToEdit);
   const deleteTask = useKanbanStore((state) => state.deleteTask);

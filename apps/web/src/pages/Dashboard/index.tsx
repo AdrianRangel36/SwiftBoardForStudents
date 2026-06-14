@@ -1,16 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { DashboardHeader, TeamsGrid } from "./components";
 import { useDashboard } from "./hooks";
 
 export const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { teams, isLoading, user, createTeam } = useDashboard();
-
-  const handleTeamClick = (teamId: number) => {
-    navigate(`/team/${teamId}`);
-  };
 
   const handleCreateTeam = async (teamName: string) => {
     await createTeam(teamName);
@@ -28,7 +22,6 @@ export const Dashboard: React.FC = () => {
         <TeamsGrid
           teams={teams}
           isLoading={isLoading}
-          onTeamClick={handleTeamClick}
           onCreateTeam={handleCreateTeam}
           isDialogOpen={isDialogOpen}
           onDialogOpenChange={setIsDialogOpen}
