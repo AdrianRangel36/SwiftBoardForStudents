@@ -32,6 +32,7 @@ interface TeamSettingsDialogProps {
   teamId: number;
   teamName: string;
   members: TeamMember[];
+  onTeamUpdated: () => void;
 }
 
 export const TeamSettingsDialog = ({
@@ -40,18 +41,18 @@ export const TeamSettingsDialog = ({
   members,
   teamId,
   teamName,
+  onTeamUpdated,
 }: TeamSettingsDialogProps) => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [newTeamName, setnewTeamName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const token = localStorage.getItem("token");
 
-  const handleInvite = async (e: React.SubmitEvent) => {
+  const handleInvite = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!inviteEmail || !teamId) return;
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("token");
       const responseUsers = await fetch(
         `${API_BASE_URL}/users/search/${inviteEmail}`,
         {
@@ -61,8 +62,10 @@ export const TeamSettingsDialog = ({
         }
       );
       if (!responseUsers.ok) throw new Error(`El Usuario no existe`);
+
       const data = await responseUsers.json();
       const inviteId = data.id;
+
       const responseTeam = await fetch(`${API_BASE_URL}/team-members/`, {
         method: "POST",
         headers: {
@@ -77,10 +80,13 @@ export const TeamSettingsDialog = ({
       });
 
       if (!responseTeam.ok) throw new Error(`Error al invitar miembro`);
+
       setInviteEmail("");
+      onTeamUpdated();
       alert("Usuario invitado exitosamente");
     } catch (error) {
       console.error("Error al invitar usuario", error);
+      alert("No se pudo invitar al usuario. Verifica el correo.");
     } finally {
       setIsLoading(false);
     }
@@ -88,12 +94,31 @@ export const TeamSettingsDialog = ({
 
   const handleChangeRole = async (memberId: number, newRole: string) => {
     try {
-      console.log(`Cambiando rol del miembro ${memberId} a ${newRole}`);
+      const response = await fetch(`${API_BASE_URL}/team-members/changerole`, {
+        method: "PUT",
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: memberId,
+          teamId: teamId,
+          role: newRole,
+        }),
+      });
+
+      if (!response.ok) throw new Error("No se pudo cambiar el rol");
+
+      // RECARGA VISUAL
+      onTeamUpdated();
     } catch (error) {
       console.error("Error al actualizar rol", error);
+      alert("Hubo un error al actualizar el rol.");
     }
   };
-  const handleChangeName = async () => {
+
+  const handleChangeName = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
     try {
       const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
         method: "PUT",
@@ -104,7 +129,9 @@ export const TeamSettingsDialog = ({
         body: JSON.stringify({ name: newTeamName }),
       });
       if (!response.ok) throw Error("Error cambiando el nombre");
+
       setnewTeamName("");
+      onTeamUpdated();
       alert("Nombre cambiado exitosamente");
     } catch (error) {
       console.error("Error al actualizar nombre", error);
@@ -112,10 +139,31 @@ export const TeamSettingsDialog = ({
   };
 
   const handleRemoveMember = async (memberId: number) => {
+    const confirmDelete = window.confirm(
+      "¿Estás seguro de que deseas eliminar a este miembro del equipo?"
+    );
+    if (!confirmDelete) return;
+
     try {
-      console.log(`Eliminando miembro ${memberId}`);
+      const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: memberId,
+          teamId: teamId,
+        }),
+      });
+
+      if (!response.ok)
+        throw new Error("Error al intentar eliminar al miembro");
+
+      onTeamUpdated();
     } catch (error) {
       console.error("Error al eliminar miembro", error);
+      alert("Hubo un problema al eliminar al usuario del equipo.");
     }
   };
 
@@ -147,9 +195,12 @@ export const TeamSettingsDialog = ({
                 className="flex-1 bg-white"
                 disabled={isLoading}
               />
-              <Button type="submit">Cambiar</Button>
+              <Button type="submit" disabled={!newTeamName.trim()}>
+                Cambiar
+              </Button>
             </form>
-            <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+
+            <h4 className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-900">
               <UserPlus className="h-4 w-4" /> Invitar nuevo miembro
             </h4>
             <form onSubmit={handleInvite} className="flex items-center gap-3">
@@ -209,13 +260,13 @@ export const TeamSettingsDialog = ({
                       <SelectContent>
                         <SelectItem value="ADMIN" className="text-xs">
                           <div className="flex items-center gap-2">
-                            <ShieldAlert className="h-3 w-3 text-orange-500" />{" "}
+                            <ShieldAlert className="h-3 w-3 text-orange-500" />
                             Admin
                           </div>
                         </SelectItem>
                         <SelectItem value="MEMBER" className="text-xs">
                           <div className="flex items-center gap-2">
-                            <Shield className="h-3 w-3 text-slate-400" />{" "}
+                            <Shield className="h-3 w-3 text-slate-400" />
                             Miembro
                           </div>
                         </SelectItem>

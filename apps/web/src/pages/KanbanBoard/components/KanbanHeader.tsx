@@ -28,6 +28,12 @@ export const KanbanHeader = () => {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
 
+  const fetchTeamData = async () => {
+    // Lógica de fetch para traer los miembros y nombre del equipo de nuevo
+    // const res = await fetch(`${API_BASE_URL}/team/${teamId}`);
+    // setMembers(res.data.members);
+    // setTeamName(res.data.name);
+  };
   // Obtenemos los datos del equipo del layout de React Router
   const teamData = useOutletContext<Team>();
 
@@ -241,6 +247,7 @@ export const KanbanHeader = () => {
         teamId={Number(teamId)}
         teamName={teamData.name}
         members={teamMembers}
+        onTeamUpdated={fetchTeamData}
       />
     </>
   );
