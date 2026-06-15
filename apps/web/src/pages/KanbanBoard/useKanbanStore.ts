@@ -12,6 +12,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   taskToEdit: null,
   user: null,
   teamId: null,
+  teamName: null,
 
   // Inicializa todo cuando el usuario entra a la vista
   initialize: async (teamId: string) => {
@@ -27,7 +28,6 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
     await Promise.all([
       get().fetchTeamTasks(teamId),
       get().fetchTeamMembers(teamId),
-      
     ]);
 
     set({ isLoading: false });

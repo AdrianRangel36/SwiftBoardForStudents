@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { UserPlus, Shield, ShieldAlert, Trash2 } from "lucide-react";
+import {
+  UserPlus,
+  Shield,
+  ShieldAlert,
+  Trash2,
+  PencilLine,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,28 +24,27 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import type { TeamMember } from "@/interfaces";
-import { useKanbanStore } from "../useKanbanStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 interface TeamSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: number;
+  teamName: string;
   members: TeamMember[];
-  currentUserRole: "OWNER" | "ADMIN" | "MEMBER" | "PENDING" | undefined;
 }
 
 export const TeamSettingsDialog = ({
   isOpen,
   onOpenChange,
   members,
-  currentUserRole,
+  teamId,
+  teamName,
 }: TeamSettingsDialogProps) => {
   const [inviteEmail, setInviteEmail] = useState("");
+  const [newTeamName, setnewTeamName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const teamId = useKanbanStore((state) => state.teamId);
-  const canManageTeam =
-    currentUserRole === "OWNER" || currentUserRole === "ADMIN";
+  const token = localStorage.getItem("token");
 
   const handleInvite = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -88,6 +93,23 @@ export const TeamSettingsDialog = ({
       console.error("Error al actualizar rol", error);
     }
   };
+  const handleChangeName = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newTeamName }),
+      });
+      if (!response.ok) throw Error("Error cambiando el nombre");
+      setnewTeamName("");
+      alert("Nombre cambiado exitosamente");
+    } catch (error) {
+      console.error("Error al actualizar nombre", error);
+    }
+  };
 
   const handleRemoveMember = async (memberId: number) => {
     try {
@@ -109,26 +131,41 @@ export const TeamSettingsDialog = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {canManageTeam && (
-            <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
-              <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                <UserPlus className="h-4 w-4" /> Invitar nuevo miembro
-              </h4>
-              <form onSubmit={handleInvite} className="flex items-center gap-3">
-                <Input
-                  placeholder="correo@estudiante.edu"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="flex-1 bg-white"
-                  disabled={isLoading}
-                />
-                <Button type="submit" disabled={isLoading || !inviteEmail}>
-                  Invitar
-                </Button>
-              </form>
-            </div>
-          )}
+          <div className="space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <PencilLine className="h-4 w-4" /> Nombre del equipo
+            </h4>
+            <form
+              onSubmit={handleChangeName}
+              className="flex items-center gap-3"
+            >
+              <Input
+                type="text"
+                placeholder={teamName}
+                value={newTeamName}
+                onChange={(e) => setnewTeamName(e.target.value)}
+                className="flex-1 bg-white"
+                disabled={isLoading}
+              />
+              <Button type="submit">Cambiar</Button>
+            </form>
+            <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <UserPlus className="h-4 w-4" /> Invitar nuevo miembro
+            </h4>
+            <form onSubmit={handleInvite} className="flex items-center gap-3">
+              <Input
+                placeholder="correo@estudiante.edu"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="flex-1 bg-white"
+                disabled={isLoading}
+              />
+              <Button type="submit" disabled={isLoading || !inviteEmail}>
+                Invitar
+              </Button>
+            </form>
+          </div>
 
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-900">
@@ -164,7 +201,7 @@ export const TeamSettingsDialog = ({
                     <Select
                       defaultValue={member.role}
                       onValueChange={(val) => handleChangeRole(member.id, val)}
-                      disabled={!canManageTeam || member.role === "OWNER"}
+                      disabled={member.role === "OWNER"}
                     >
                       <SelectTrigger className="h-8 w-30 text-xs">
                         <SelectValue />
@@ -185,7 +222,7 @@ export const TeamSettingsDialog = ({
                       </SelectContent>
                     </Select>
 
-                    {canManageTeam && member.role !== "OWNER" && (
+                    {member.role !== "OWNER" && (
                       <Button
                         variant="ghost"
                         size="icon"

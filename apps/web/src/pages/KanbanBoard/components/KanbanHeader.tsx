@@ -27,7 +27,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const KanbanHeader = () => {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
-  
+
   // Obtenemos los datos del equipo del layout de React Router
   const teamData = useOutletContext<Team>();
 
@@ -42,7 +42,7 @@ export const KanbanHeader = () => {
   const isOwnerOrAdmin =
     currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
 
-  const getInitials = (member: TeamMember ) => {
+  const getInitials = (member: TeamMember) => {
     if (!member.user) return "NA";
     return `${member.user.name.charAt(0)}${member.user.paternalSurname.charAt(0)}`.toUpperCase();
   };
@@ -233,14 +233,14 @@ export const KanbanHeader = () => {
           </div>
         </div>
       </header>
-      
+
       {/* El diálogo de configuraciones ahora recibe los datos limpios directamente */}
       <TeamSettingsDialog
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         teamId={Number(teamId)}
+        teamName={teamData.name}
         members={teamMembers}
-        currentUserRole={currentMember?.role}
       />
     </>
   );
