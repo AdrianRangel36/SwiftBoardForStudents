@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   UserPlus,
   Shield,
@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -26,6 +27,7 @@ import {
 import type { TeamMember } from "@/interfaces";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 interface TeamSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,11 +45,150 @@ export const TeamSettingsDialog = ({
   teamName,
   onTeamUpdated,
 }: TeamSettingsDialogProps) => {
+  // --- Estados de Acciones Inmediatas (Invites) ---
   const [inviteEmail, setInviteEmail] = useState("");
-  const [newTeamName, setnewTeamName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const token = localStorage.getItem("token");
 
+  // --- Estados Borrador (Draft State) ---
+  const [draftName, setDraftName] = useState(teamName);
+  const [draftRoles, setDraftRoles] = useState<Record<number, string>>({});
+  const [draftDeletions, setDraftDeletions] = useState<Set<number>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 1. Hidratación del Draft State al abrir el dialog
+  useEffect(() => {
+    if (isOpen) {
+      setDraftName(teamName);
+
+      const initialRoles: Record<number, string> = {};
+      members.forEach((m) => {
+        initialRoles[m.id] = m.role;
+      });
+      setDraftRoles(initialRoles);
+
+      setDraftDeletions(new Set());
+      setInviteEmail("");
+    }
+  }, [isOpen, teamName, members]);
+
+  // 2. Dirty Checking: Derivamos qué ha cambiado
+  const hasNameChanged = draftName.trim() !== "" && draftName !== teamName;
+
+  const rolesToUpdate = members.filter(
+    (m) =>
+      draftRoles[m.id] &&
+      draftRoles[m.id] !== m.role &&
+      !draftDeletions.has(m.id)
+  );
+
+  const hasPendingDeletions = draftDeletions.size > 0;
+  const hasUnsavedChanges =
+    hasNameChanged || rolesToUpdate.length > 0 || hasPendingDeletions;
+
+  // 3. Interceptar cierre del Dialog
+  const handleOpenChangeInterception = (newOpen: boolean) => {
+    if (!newOpen && hasUnsavedChanges) {
+      const confirmClose = window.confirm(
+        "Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar y descartar los cambios?"
+      );
+      if (!confirmClose) return; // Aborta el cierre
+    }
+    onOpenChange(newOpen);
+  };
+
+  // 4. Batch de Guardado (Se ejecutan todos los cambios juntos)
+  const handleSaveChanges = async () => {
+    if (!hasUnsavedChanges) {
+      onOpenChange(false);
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const promises: Promise<Response>[] = [];
+
+      // A. Promesa: Cambio de Nombre
+      if (hasNameChanged) {
+        promises.push(
+          fetch(`${API_BASE_URL}/team/${teamId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: draftName }),
+          }).then((res) => {
+            if (!res.ok) throw new Error("Error cambiando el nombre");
+            return res;
+          })
+        );
+      }
+
+      // B. Promesas: Cambio de Roles
+      rolesToUpdate.forEach((member) => {
+        promises.push(
+          fetch(`${API_BASE_URL}/team-members/changerole`, {
+            method: "PUT",
+            headers: {
+              "Content-type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              userId: member.user?.id,
+              teamId: teamId,
+              role: draftRoles[member.id],
+            }),
+          }).then((res) => {
+            if (!res.ok)
+              throw new Error(
+                `Error cambiando el rol del miembro ${member.id}`
+              );
+            return res;
+          })
+        );
+      });
+
+      // C. Promesas: Eliminar Miembros
+      draftDeletions.forEach((memberId) => {
+        promises.push(
+          fetch(`${API_BASE_URL}/team-members/leaveteam`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              userId: memberId,
+              teamId: teamId,
+            }),
+          }).then((res) => {
+            if (!res.ok)
+              throw new Error(`Error al eliminar al miembro ${memberId}`);
+            return res;
+          })
+        );
+      });
+
+      // Ejecutar todo en paralelo
+      await Promise.all(promises);
+
+      // Si todo sale bien, recargamos UI y cerramos
+      onTeamUpdated();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error al guardar los cambios", error);
+      alert(
+        "Hubo un error al aplicar algunos de los cambios. Por favor, revisa e inténtalo de nuevo."
+      );
+      // Recargamos el estado para que muestre la realidad de la DB después de fallar
+      onTeamUpdated();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 5. La invitación se mantiene inmediata por su dependencia del correo
   const handleInvite = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!inviteEmail || !teamId) return;
@@ -56,9 +197,7 @@ export const TeamSettingsDialog = ({
       const responseUsers = await fetch(
         `${API_BASE_URL}/users/search/${inviteEmail}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       if (!responseUsers.ok) throw new Error(`El Usuario no existe`);
@@ -92,83 +231,10 @@ export const TeamSettingsDialog = ({
     }
   };
 
-  const handleChangeRole = async (memberId: number, newRole: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/team-members/changerole`, {
-        method: "PUT",
-        headers: {
-          "Content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: memberId,
-          teamId: teamId,
-          role: newRole,
-        }),
-      });
-
-      if (!response.ok) throw new Error("No se pudo cambiar el rol");
-
-      // RECARGA VISUAL
-      onTeamUpdated();
-    } catch (error) {
-      console.error("Error al actualizar rol", error);
-      alert("Hubo un error al actualizar el rol.");
-    }
-  };
-
-  const handleChangeName = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_BASE_URL}/team/${teamId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name: newTeamName }),
-      });
-      if (!response.ok) throw Error("Error cambiando el nombre");
-
-      setnewTeamName("");
-      onTeamUpdated();
-      alert("Nombre cambiado exitosamente");
-    } catch (error) {
-      console.error("Error al actualizar nombre", error);
-    }
-  };
-
-  const handleRemoveMember = async (memberId: number) => {
-    const confirmDelete = window.confirm(
-      "¿Estás seguro de que deseas eliminar a este miembro del equipo?"
-    );
-    if (!confirmDelete) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/team-members/leaveteam`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: memberId,
-          teamId: teamId,
-        }),
-      });
-
-      if (!response.ok)
-        throw new Error("Error al intentar eliminar al miembro");
-
-      onTeamUpdated();
-    } catch (error) {
-      console.error("Error al eliminar miembro", error);
-      alert("Hubo un problema al eliminar al usuario del equipo.");
-    }
-  };
+  const visibleMembers = members.filter((m) => !draftDeletions.has(m.id));
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChangeInterception}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Configuración del Equipo</DialogTitle>
@@ -183,22 +249,17 @@ export const TeamSettingsDialog = ({
             <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <PencilLine className="h-4 w-4" /> Nombre del equipo
             </h4>
-            <form
-              onSubmit={handleChangeName}
-              className="flex items-center gap-3"
-            >
+            {/* Se retiró la etiqueta 'form' ya que no se envía de inmediato */}
+            <div className="flex items-center gap-3">
               <Input
                 type="text"
                 placeholder={teamName}
-                value={newTeamName}
-                onChange={(e) => setnewTeamName(e.target.value)}
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
                 className="flex-1 bg-white"
-                disabled={isLoading}
+                disabled={isLoading || isSaving}
               />
-              <Button type="submit" disabled={!newTeamName.trim()}>
-                Cambiar
-              </Button>
-            </form>
+            </div>
 
             <h4 className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-900">
               <UserPlus className="h-4 w-4" /> Invitar nuevo miembro
@@ -210,9 +271,12 @@ export const TeamSettingsDialog = ({
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="flex-1 bg-white"
-                disabled={isLoading}
+                disabled={isLoading || isSaving}
               />
-              <Button type="submit" disabled={isLoading || !inviteEmail}>
+              <Button
+                type="submit"
+                disabled={isLoading || isSaving || !inviteEmail}
+              >
                 Invitar
               </Button>
             </form>
@@ -223,7 +287,7 @@ export const TeamSettingsDialog = ({
               Miembros actuales
             </h4>
             <div className="divide-y divide-gray-100 rounded-lg border border-gray-100">
-              {members.map((member) => (
+              {visibleMembers.map((member) => (
                 <div
                   key={member.id}
                   className="flex items-center justify-between p-3"
@@ -241,18 +305,24 @@ export const TeamSettingsDialog = ({
                       <span className="text-xs text-gray-500">
                         {member.role === "OWNER"
                           ? "Propietario"
-                          : member.role === "ADMIN"
+                          : draftRoles[member.id] === "ADMIN"
                             ? "Administrador"
-                            : "Miembro"}
+                            : draftRoles[member.id] === "MEMBER"
+                              ? "Miembro"
+                              : member.role === "ADMIN"
+                                ? "Administrador"
+                                : "Miembro"}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Select
-                      defaultValue={member.role}
-                      onValueChange={(val) => handleChangeRole(member.id, val)}
-                      disabled={member.role === "OWNER"}
+                      value={draftRoles[member.id] || member.role}
+                      onValueChange={(val) =>
+                        setDraftRoles((prev) => ({ ...prev, [member.id]: val }))
+                      }
+                      disabled={member.role === "OWNER" || isSaving}
                     >
                       <SelectTrigger className="h-8 w-30 text-xs">
                         <SelectValue />
@@ -278,7 +348,12 @@ export const TeamSettingsDialog = ({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => handleRemoveMember(member.id)}
+                        onClick={() =>
+                          setDraftDeletions((prev) =>
+                            new Set(prev).add(member.id)
+                          )
+                        }
+                        disabled={isSaving}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -286,9 +361,39 @@ export const TeamSettingsDialog = ({
                   </div>
                 </div>
               ))}
+              {visibleMembers.length === 0 && (
+                <div className="p-3 text-center text-sm text-gray-500">
+                  No hay miembros visibles en el equipo.
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        <DialogFooter className="mt-4 flex items-center gap-2 sm:justify-between">
+          {hasUnsavedChanges ? (
+            <span className="mr-auto text-sm font-medium text-amber-600">
+              Tienes cambios sin aplicar
+            </span>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleOpenChangeInterception(false)}
+              disabled={isSaving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveChanges}
+              disabled={isSaving || !hasUnsavedChanges}
+            >
+              {isSaving ? "Guardando..." : "Guardar cambios"}
+            </Button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

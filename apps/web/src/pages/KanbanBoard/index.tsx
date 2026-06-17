@@ -42,13 +42,11 @@ const { teamId } = useParams<{ teamId: string }>();
     const taskId = Number(active.id);
     const newStatus = over.id as Task["status"];
 
-    // Toda la lógica compleja y la llamada PUT a la API ahora está en Zustand
     moveTask(taskId, newStatus);
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Ya no pasamos props. El Header se encargará de buscar lo suyo */}
       <KanbanHeader />
       
       <main className="flex flex-1 flex-col p-6">
