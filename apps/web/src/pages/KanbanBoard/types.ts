@@ -12,7 +12,6 @@ export interface Task {
   endDate: string;
 }
 
-
 export const KANBAN_COLUMNS = [
   { id: "TO_DO", title: "Por Hacer", color: "bg-slate-200 border-slate-300" },
   {
@@ -36,6 +35,7 @@ export interface KanbanState {
   taskToEdit: Task | null;
   user: UserData | null;
   teamId: string | null;
+  teamName: string | null;
 
   // --- ACCIONES ---
   initialize: (teamId: string) => Promise<void>;
@@ -44,4 +44,6 @@ export interface KanbanState {
   setTaskToEdit: (task: Task | null) => void;
   deleteTask: (taskId: number) => Promise<void>;
   moveTask: (taskId: number, newStatus: Task["status"]) => Promise<void>;
+  refetchTeamData: () => Promise<void>;
+  setTeamName: (newName: string) => void;
 }

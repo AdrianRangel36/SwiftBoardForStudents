@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import {
   ArrowLeft,
@@ -27,23 +27,24 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const KanbanHeader = () => {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
-
-  const fetchTeamData = async () => {
-    // Lógica de fetch para traer los miembros y nombre del equipo de nuevo
-    // const res = await fetch(`${API_BASE_URL}/team/${teamId}`);
-    // setMembers(res.data.members);
-    // setTeamName(res.data.name);
-  };
-  // Obtenemos los datos del equipo del layout de React Router
   const teamData = useOutletContext<Team>();
 
-  // EXTRAER UNO POR UNO
   const teamMembers = useKanbanStore((state) => state.teamMembers);
   const user = useKanbanStore((state) => state.user);
+  const storeTeamName = useKanbanStore((state) => state.teamName);
+  const setStoreTeamName = useKanbanStore((state) => state.setTeamName);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Lógica de permisos calculada localmente con los datos del Store
+  useEffect(() => {
+    if (teamData?.name && !storeTeamName) {
+      setStoreTeamName(teamData.name);
+    }
+  }, [teamData, storeTeamName, setStoreTeamName]);
+
+  // Derivar el nombre a mostrar (priorizamos Zustand por si cambia)
+  const displayTeamName = storeTeamName || teamData?.name || "Equipo";
+
   const currentMember = teamMembers.find((m) => m.userId === user?.id);
   const isOwnerOrAdmin =
     currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
@@ -56,7 +57,6 @@ export const KanbanHeader = () => {
   const displayMembers = teamMembers.slice(0, 3);
   const remainingMembersCount = teamMembers.length - 3;
 
-  // Acciones de equipo mudadas desde index.tsx
   const handleDeleteTeam = async () => {
     const isConfirmed = window.confirm(
       "¿Estás seguro de que deseas eliminar este equipo? Esta acción es irreversible."
@@ -128,7 +128,8 @@ export const KanbanHeader = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {teamData?.name || "Equipo"}
+              {/* VINCULADO AL ESTADO REACTIVO */}
+              {displayTeamName}
             </h1>
             <p className="flex items-center text-sm text-gray-500">
               <Users className="mr-1 h-4 w-4" /> Tablero de equipo
@@ -240,14 +241,13 @@ export const KanbanHeader = () => {
         </div>
       </header>
 
-      {/* El diálogo de configuraciones ahora recibe los datos limpios directamente */}
+      {/* EL DIÁLOGO AHORA DISPARA EL REFETCH REAL DE ZUSTAND */}
       <TeamSettingsDialog
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         teamId={Number(teamId)}
-        teamName={teamData.name}
+        teamName={displayTeamName}
         members={teamMembers}
-        onTeamUpdated={fetchTeamData}
       />
     </>
   );

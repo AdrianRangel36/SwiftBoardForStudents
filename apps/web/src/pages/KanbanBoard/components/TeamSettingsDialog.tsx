@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import type { TeamMember } from "@/interfaces";
+import { useKanbanStore } from "../useKanbanStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -34,7 +35,6 @@ interface TeamSettingsDialogProps {
   teamId: number;
   teamName: string;
   members: TeamMember[];
-  onTeamUpdated: () => void;
 }
 
 export const TeamSettingsDialog = ({
@@ -43,7 +43,6 @@ export const TeamSettingsDialog = ({
   members,
   teamId,
   teamName,
-  onTeamUpdated,
 }: TeamSettingsDialogProps) => {
   // --- Estados de Acciones Inmediatas (Invites) ---
   const [inviteEmail, setInviteEmail] = useState("");
@@ -55,6 +54,9 @@ export const TeamSettingsDialog = ({
   const [draftRoles, setDraftRoles] = useState<Record<number, string>>({});
   const [draftDeletions, setDraftDeletions] = useState<Set<number>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+
+  const refetchTeamData = useKanbanStore((state) => state.refetchTeamData);
+  const setStoreTeamName = useKanbanStore((state) => state.setTeamName);
 
   // 1. Hidratación del Draft State al abrir el dialog
   useEffect(() => {
@@ -173,16 +175,24 @@ export const TeamSettingsDialog = ({
       // Ejecutar todo en paralelo
       await Promise.all(promises);
 
-      // Si todo sale bien, recargamos UI y cerramos
-      onTeamUpdated();
+      // 1. Si el nombre cambió, lo actualizamos instantáneamente en Zustand
+      if (hasNameChanged) {
+        setStoreTeamName(draftName);
+      }
+
+      // 2. Refrescamos miembros y tareas silenciosamente desde NestJS
+      await refetchTeamData();
+
+      // 3. Cerramos el modal limpiamente
       onOpenChange(false);
     } catch (error) {
       console.error("Error al guardar los cambios", error);
       alert(
         "Hubo un error al aplicar algunos de los cambios. Por favor, revisa e inténtalo de nuevo."
       );
-      // Recargamos el estado para que muestre la realidad de la DB después de fallar
-      onTeamUpdated();
+
+      // Si falla algo, recargamos para recuperar el estado real del servidor
+      await refetchTeamData();
     } finally {
       setIsSaving(false);
     }
@@ -221,7 +231,7 @@ export const TeamSettingsDialog = ({
       if (!responseTeam.ok) throw new Error(`Error al invitar miembro`);
 
       setInviteEmail("");
-      onTeamUpdated();
+      refetchTeamData();
       alert("Usuario invitado exitosamente");
     } catch (error) {
       console.error("Error al invitar usuario", error);
@@ -234,8 +244,8 @@ export const TeamSettingsDialog = ({
   const visibleMembers = members.filter((m) => !draftDeletions.has(m.id));
 
   return (
-<Dialog open={isOpen} onOpenChange={handleOpenChangeInterception}>
-      <DialogContent className="md:min-w-xl max-w-2xl max-h-[90vh] flex flex-col">
+    <Dialog open={isOpen} onOpenChange={handleOpenChangeInterception}>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col md:min-w-xl">
         <DialogHeader>
           <DialogTitle>Configuración del Equipo</DialogTitle>
           <DialogDescription>
@@ -244,14 +254,13 @@ export const TeamSettingsDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 overflow-hidden">
-          
+        <div className="grid grid-cols-1 gap-6 overflow-hidden py-4 md:grid-cols-2">
           <div className="flex flex-col gap-6">
-            <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-5 space-y-5">
-              
+            <div className="space-y-5 rounded-lg border border-gray-200 bg-gray-50/50 p-5">
               <div className="space-y-3">
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <PencilLine className="h-4 w-4 text-gray-500" /> Nombre del equipo
+                  <PencilLine className="h-4 w-4 text-gray-500" /> Nombre del
+                  equipo
                 </h4>
                 <Input
                   type="text"
@@ -267,9 +276,13 @@ export const TeamSettingsDialog = ({
 
               <div className="space-y-3">
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <UserPlus className="h-4 w-4 text-gray-500" /> Invitar nuevo miembro
+                  <UserPlus className="h-4 w-4 text-gray-500" /> Invitar nuevo
+                  miembro
                 </h4>
-                <form onSubmit={handleInvite} className="flex items-center gap-2">
+                <form
+                  onSubmit={handleInvite}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     placeholder="correo@estudiante.edu"
                     type="email"
@@ -286,7 +299,6 @@ export const TeamSettingsDialog = ({
                   </Button>
                 </form>
               </div>
-
             </div>
           </div>
 
@@ -295,23 +307,23 @@ export const TeamSettingsDialog = ({
             <h4 className="mb-3 text-sm font-medium text-gray-900">
               Miembros actuales
             </h4>
-            
+
             {/* 5. Contenedor con Scroll: Altura fija máxima para no estirar el modal */}
-            <div className="flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white max-h-[60vh] md:max-h-[320px] shadow-sm">
+            <div className="max-h-[60vh] flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm md:max-h-80">
               <div className="divide-y divide-gray-100">
                 {visibleMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50/50 transition-colors"
+                    className="flex items-center justify-between p-3 transition-colors hover:bg-gray-50/50"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">
+                        <AvatarFallback className="bg-blue-100 font-medium text-blue-700">
                           {member.user?.name?.charAt(0) || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                        <span className="max-w-30 truncate text-sm font-medium text-gray-900">
                           {member.user?.name} {member.user?.paternalSurname}
                         </span>
                         <span className="text-[11px] text-gray-500">
@@ -332,11 +344,14 @@ export const TeamSettingsDialog = ({
                       <Select
                         value={draftRoles[member.id] || member.role}
                         onValueChange={(val) =>
-                          setDraftRoles((prev) => ({ ...prev, [member.id]: val }))
+                          setDraftRoles((prev) => ({
+                            ...prev,
+                            [member.id]: val,
+                          }))
                         }
                         disabled={member.role === "OWNER" || isSaving}
                       >
-                        <SelectTrigger className="h-8 w-28 text-xs bg-white">
+                        <SelectTrigger className="h-8 w-28 bg-white text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -359,7 +374,7 @@ export const TeamSettingsDialog = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          className="h-8 w-8 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           onClick={() =>
                             setDraftDeletions((prev) =>
                               new Set(prev).add(member.id)
@@ -374,7 +389,7 @@ export const TeamSettingsDialog = ({
                   </div>
                 ))}
                 {visibleMembers.length === 0 && (
-                  <div className="p-6 text-center text-sm text-gray-500 flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-gray-500">
                     <Shield className="h-8 w-8 text-gray-200" />
                     <span>No hay miembros visibles en el equipo.</span>
                   </div>
@@ -384,19 +399,19 @@ export const TeamSettingsDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-between border-t border-gray-100 pt-4">
+        <DialogFooter className="mt-4 flex flex-col-reverse items-center gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-between">
           {hasUnsavedChanges ? (
-            <span className="sm:mr-auto text-sm font-medium text-amber-600 flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-amber-600 sm:mr-auto">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
               </span>
               Tienes cambios sin aplicar
             </span>
           ) : (
             <span />
           )}
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex w-full gap-2 sm:w-auto">
             <Button
               className="w-full sm:w-auto"
               variant="outline"

@@ -144,4 +144,16 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       if (teamId) fetchTeamTasks(teamId);
     }
   },
+  // Ejecuta las peticiones de nuevo silenciosamente (sin poner isLoading a true)
+  refetchTeamData: async () => {
+    const { teamId, fetchTeamTasks, fetchTeamMembers } = get();
+    if (!teamId) return;
+
+    await Promise.all([fetchTeamTasks(teamId), fetchTeamMembers(teamId)]);
+  },
+
+  // Actualiza el nombre del equipo de forma local e instantánea
+  setTeamName: (newName: string) => {
+    set({ teamName: newName });
+  },
 }));
