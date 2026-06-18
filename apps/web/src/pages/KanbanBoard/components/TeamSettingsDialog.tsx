@@ -79,9 +79,9 @@ export const TeamSettingsDialog = ({
 
   const rolesToUpdate = members.filter(
     (m) =>
-      draftRoles[m.id] &&
-      draftRoles[m.id] !== m.role &&
-      !draftDeletions.has(m.id)
+      draftRoles[m.userId] &&
+      draftRoles[m.userId] !== m.role &&
+      !draftDeletions.has(m.userId)
   );
 
   const hasPendingDeletions = draftDeletions.size > 0;
@@ -311,83 +311,85 @@ export const TeamSettingsDialog = ({
             {/* 5. Contenedor con Scroll: Altura fija máxima para no estirar el modal */}
             <div className="max-h-[60vh] flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm md:max-h-80">
               <div className="divide-y divide-gray-100">
-                {visibleMembers.map((member) => (
-                  <div
-                    key={member.userId}
-                    className="flex items-center justify-between p-3 transition-colors hover:bg-gray-50/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-blue-100 font-medium text-blue-700">
-                          {member.user?.name?.charAt(0) || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="max-w-30 truncate text-sm font-medium text-gray-900">
-                          {member.user?.name} {member.user?.paternalSurname}
-                        </span>
-                        <span className="text-[11px] text-gray-500">
-                          {member.role === "OWNER"
-                            ? "Propietario"
-                            : draftRoles[member.id] === "ADMIN"
-                              ? "Administrador"
-                              : draftRoles[member.id] === "MEMBER"
-                                ? "Miembro"
+                {visibleMembers.map((member) => {
+                  const isPendingChange =
+                    draftRoles[member.userId] !== member.role;
+                  return (
+                    <div
+                      key={member.userId}
+                      className="flex items-center justify-between p-3 transition-colors hover:bg-gray-50/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback className="bg-blue-100 font-medium text-blue-700">
+                            {member.user?.name?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="max-w-30 truncate text-sm font-medium text-gray-900">
+                            {member.user?.name} {member.user?.paternalSurname}
+                          </span>
+                          <span className="text-[11px] text-gray-500">
+                            {member.role === "OWNER"
+                              ? "Propietario"
+                              : isPendingChange
+                                ? `${draftRoles[member.userId] === "ADMIN" ? "Administrador" : "Miembro"} (Cambio pendiente)`
                                 : member.role === "ADMIN"
                                   ? "Administrador"
                                   : "Miembro"}
-                        </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <Select
+                          value={draftRoles[member.userId] || member.role}
+                          onValueChange={(val) =>
+                            setDraftRoles((prev) => ({
+                              ...prev,
+                              [member.userId]: val,
+                            }))
+                          }
+                          disabled={member.role === "OWNER" || isSaving}
+                        >
+                          <SelectTrigger className="h-8 w-28 bg-white text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ADMIN" className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <ShieldAlert className="h-3 w-3 text-orange-500" />
+                                Admin
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="MEMBER" className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <Shield className="h-3 w-3 text-slate-400" />
+                                Miembro
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {member.role !== "OWNER" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            onClick={() =>
+                              setDraftDeletions((prev) =>
+                                new Set(prev).add(member.userId)
+                              )
+                            }
+                            disabled={isSaving}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <Select
-                        value={draftRoles[member.userId] || member.role}
-                        onValueChange={(val) =>
-                          setDraftRoles((prev) => ({
-                            ...prev,
-                            [member.userId]: val,
-                          }))
-                        }
-                        disabled={member.role === "OWNER" || isSaving}
-                      >
-                        <SelectTrigger className="h-8 w-28 bg-white text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ADMIN" className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <ShieldAlert className="h-3 w-3 text-orange-500" />
-                              Admin
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="MEMBER" className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-3 w-3 text-slate-400" />
-                              Miembro
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      {member.role !== "OWNER" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          onClick={() =>
-                            setDraftDeletions((prev) =>
-                              new Set(prev).add(member.userId)
-                            )
-                          }
-                          disabled={isSaving}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {visibleMembers.length === 0 && (
                   <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-gray-500">
                     <Shield className="h-8 w-8 text-gray-200" />
