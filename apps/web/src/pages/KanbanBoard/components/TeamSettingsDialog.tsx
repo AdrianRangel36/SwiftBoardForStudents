@@ -65,7 +65,7 @@ export const TeamSettingsDialog = ({
 
       const initialRoles: Record<number, string> = {};
       members.forEach((m) => {
-        initialRoles[m.id] = m.role;
+        initialRoles[m.userId] = m.role;
       });
       setDraftRoles(initialRoles);
 
@@ -137,9 +137,9 @@ export const TeamSettingsDialog = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              userId: member.user?.id,
+              userId: member.userId,
               teamId: teamId,
-              role: draftRoles[member.id],
+              role: draftRoles[member.userId],
             }),
           }).then((res) => {
             if (!res.ok)
@@ -152,7 +152,7 @@ export const TeamSettingsDialog = ({
       });
 
       // C. Promesas: Eliminar Miembros
-      draftDeletions.forEach((memberId) => {
+      draftDeletions.forEach((deleteId) => {
         promises.push(
           fetch(`${API_BASE_URL}/team-members/leaveteam`, {
             method: "DELETE",
@@ -161,12 +161,12 @@ export const TeamSettingsDialog = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              userId: memberId,
+              userId: deleteId,
               teamId: teamId,
             }),
           }).then((res) => {
             if (!res.ok)
-              throw new Error(`Error al eliminar al miembro ${memberId}`);
+              throw new Error(`Error al eliminar al miembro ${deleteId}`);
             return res;
           })
         );
@@ -241,7 +241,7 @@ export const TeamSettingsDialog = ({
     }
   };
 
-  const visibleMembers = members.filter((m) => !draftDeletions.has(m.id));
+  const visibleMembers = members.filter((m) => !draftDeletions.has(m.userId));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChangeInterception}>
@@ -313,7 +313,7 @@ export const TeamSettingsDialog = ({
               <div className="divide-y divide-gray-100">
                 {visibleMembers.map((member) => (
                   <div
-                    key={member.id}
+                    key={member.userId}
                     className="flex items-center justify-between p-3 transition-colors hover:bg-gray-50/50"
                   >
                     <div className="flex items-center gap-3">
@@ -342,11 +342,11 @@ export const TeamSettingsDialog = ({
 
                     <div className="flex items-center gap-1.5">
                       <Select
-                        value={draftRoles[member.id] || member.role}
+                        value={draftRoles[member.userId] || member.role}
                         onValueChange={(val) =>
                           setDraftRoles((prev) => ({
                             ...prev,
-                            [member.id]: val,
+                            [member.userId]: val,
                           }))
                         }
                         disabled={member.role === "OWNER" || isSaving}
@@ -377,7 +377,7 @@ export const TeamSettingsDialog = ({
                           className="h-8 w-8 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           onClick={() =>
                             setDraftDeletions((prev) =>
-                              new Set(prev).add(member.id)
+                              new Set(prev).add(member.userId)
                             )
                           }
                           disabled={isSaving}

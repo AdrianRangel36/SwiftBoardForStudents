@@ -20,7 +20,6 @@ export interface TeamMember {
   teamId: number;
   role: teamRole;
   user?: {
-    id: number;
     name: string;
     paternalSurname: string;
     maternalSurname: string;
