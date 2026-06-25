@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   ArrowLeft,
   Trash2,
@@ -23,12 +23,11 @@ import { useKanbanStore } from "../useKanbanStore";
 import type { Team, TeamMember } from "@/interfaces";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
+ 
 export const KanbanHeader = () => {
   const navigate = useNavigate();
-  const { teamId } = useParams<{ teamId: string }>();
   const teamData = useOutletContext<Team>();
-
+  const teamId = teamData.teamId;
   const teamMembers = useKanbanStore((state) => state.teamMembers);
   const user = useKanbanStore((state) => state.user);
   const storeTeamName = useKanbanStore((state) => state.teamName);
@@ -42,8 +41,7 @@ export const KanbanHeader = () => {
     }
   }, [teamData, storeTeamName, setStoreTeamName]);
 
-  // Derivar el nombre a mostrar (priorizamos Zustand por si cambia)
-  const displayTeamName = storeTeamName || teamData?.name || "Equipo";
+  const displayTeamName =  teamData?.name || storeTeamName || "Equipo";
 
   const currentMember = teamMembers.find((m) => m.userId === user?.id);
   const isOwnerOrAdmin =
