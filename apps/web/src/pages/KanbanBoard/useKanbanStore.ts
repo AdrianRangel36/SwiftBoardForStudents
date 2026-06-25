@@ -15,17 +15,14 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   teamId: null,
   teamName: null,
 
-  // Inicializa todo cuando el usuario entra a la vista
   initialize: async (teamId: string) => {
     set({ teamId, isLoading: true });
 
-    // Leer el usuario de localstorage (solo se hace una vez aquí)
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       set({ user: JSON.parse(storedUser) });
     }
 
-    // Ejecutar ambas peticiones al mismo tiempo para que cargue más rápido
     await Promise.all([
       get().fetchTeamTasks(teamId),
       get().fetchTeamMembers(teamId),
@@ -39,9 +36,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       const token = localStorage.getItem("token");
       const response = await fetch(
         `${API_BASE_URL}/tasks/team-tasks/${teamId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!response.ok) throw new Error("Error fetching tasks");
@@ -60,9 +55,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       const token = localStorage.getItem("token");
       const response = await fetch(
         `${API_BASE_URL}/team-members/findallteam/${teamId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!response.ok) throw new Error("Error fetching members");
@@ -103,7 +96,6 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
 
       if (!response.ok) throw new Error("Error al eliminar la tarea");
 
-      // Actualizar la UI localmente sin volver a hacer fetch (más rápido)
       const { tasks, taskToEdit } = get();
       set({
         tasks: tasks.filter((t) => t.id !== taskId),
@@ -115,19 +107,26 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
     }
   },
 
+  moveTaskLocally: (taskId: number, newStatus: Task["status"]) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId ? { ...t, status: newStatus } : t
+      ),
+    }));
+  },
+
   moveTask: async (taskId: number, newStatus: Task["status"]) => {
     const { tasks, fetchTeamTasks, teamId } = get();
     const task = tasks.find((t) => t.id === taskId);
 
-    if (!task || task.status === newStatus) return;
+    if (task && task.status !== newStatus) {
+      set({
+        tasks: tasks.map((t) =>
+          t.id === taskId ? { ...t, status: newStatus } : t
+        ),
+      });
+    }
 
-    set({
-      tasks: tasks.map((t) =>
-        t.id === taskId ? { ...t, status: newStatus } : t
-      ),
-    });
-
-    // PETICIÓN PUT AL BACKEND
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
@@ -142,32 +141,27 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       if (!response.ok) throw new Error("Error al mover la tarea en la BD");
     } catch (error) {
       console.error("Error moviendo tarea:", error);
+      // Revertir al estado del servidor si falla
       if (teamId) fetchTeamTasks(teamId);
     }
   },
-  // Ejecuta las peticiones de nuevo silenciosamente (sin poner isLoading a true)
+
+  reorderTask: (status, oldIndex, newIndex) => {
+    set((state) => {
+      const columnTasks = state.tasks.filter((t) => t.status === status);
+      const otherTasks = state.tasks.filter((t) => t.status !== status);
+      const reordered = arrayMove(columnTasks, oldIndex, newIndex);
+      return { tasks: [...otherTasks, ...reordered] };
+    });
+  },
+
   refetchTeamData: async () => {
     const { teamId, fetchTeamTasks, fetchTeamMembers } = get();
     if (!teamId) return;
-
     await Promise.all([fetchTeamTasks(teamId), fetchTeamMembers(teamId)]);
   },
 
-  // Actualiza el nombre del equipo de forma local e instantánea
   setTeamName: (newName: string) => {
     set({ teamName: newName });
   },
-  reorderTask: (status, oldIndex, newIndex) => {
-  set((state) => {
-    // Separa las tareas de esta columna de las del resto
-    const columnTasks = state.tasks.filter((t) => t.status === status);
-    const otherTasks = state.tasks.filter((t) => t.status !== status);
- 
-    // arrayMove es de @dnd-kit/sortable — ya lo tienes instalado
-    const reordered = arrayMove(columnTasks, oldIndex, newIndex);
- 
-    // Reconstruye el array global manteniendo el orden original de las otras columnas
-    return { tasks: [...otherTasks, ...reordered] };
-  });
-},
 }));
