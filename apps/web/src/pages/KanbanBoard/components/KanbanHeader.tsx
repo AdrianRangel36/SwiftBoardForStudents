@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { TeamSettingsDialog } from "./TeamSettingsDialog";
+import { TeamSettingsDialog } from "./TeamSettingsDialog/TeamSettingsDialog";
 import { useKanbanStore } from "../useKanbanStore";
 import type { Team, TeamMember } from "@/interfaces";
 
