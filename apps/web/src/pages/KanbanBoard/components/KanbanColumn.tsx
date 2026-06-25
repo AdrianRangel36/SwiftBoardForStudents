@@ -37,6 +37,8 @@ const SortableTask = ({ task }: SortableTaskProps) => {
 
   const style = {
     transform: CSS.Transform.toString(transform),
+    // Usa la transición de dnd-kit para que las tarjetas vecinas se aparten
+    // suavemente. Si no hay transición (primera vez), aplica la por defecto.
     transition: transition ?? "transform 200ms ease",
   };
 
@@ -52,8 +54,6 @@ const SortableTask = ({ task }: SortableTaskProps) => {
     </div>
   );
 };
-
-// ─── KanbanColumn ─────────────────────────────────────────────────────────────
 
 interface KanbanColumnProps {
   id: string;
@@ -72,7 +72,8 @@ export const KanbanColumn = ({ id, title, color }: KanbanColumnProps) => {
 
   return (
     <div
-      className={`flex flex-col rounded-xl border p-4 transition-colors duration-150 h-[55vh] lg:h-auto lg:min-h-125 ${
+      ref={setColumnRef}
+      className={`flex h-[55vh] flex-col rounded-xl border p-4 transition-colors duration-150 lg:h-auto lg:min-h-125 ${
         isOver
           ? "border-indigo-300 bg-indigo-50/60 shadow-inner"
           : "border-gray-200 bg-gray-100/50"
@@ -89,18 +90,16 @@ export const KanbanColumn = ({ id, title, color }: KanbanColumnProps) => {
       </div>
 
       <ScrollArea className="flex-1 pr-3">
-        <div ref={setColumnRef} className="flex h-full flex-col">
-          <SortableContext
-            items={tasks.map((t) => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="flex flex-col gap-3 pb-16 min-h-15">
-              {tasks.map((task) => (
-                <SortableTask key={task.id} task={task} />
-              ))}
-            </div>
-          </SortableContext>
-        </div>
+        <SortableContext
+          items={tasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="flex min-h-15 flex-col gap-3 pb-4">
+            {tasks.map((task) => (
+              <SortableTask key={task.id} task={task} />
+            ))}
+          </div>
+        </SortableContext>
       </ScrollArea>
     </div>
   );
