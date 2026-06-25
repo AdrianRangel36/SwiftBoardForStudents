@@ -46,4 +46,10 @@ export interface KanbanState {
   moveTask: (taskId: number, newStatus: Task["status"]) => Promise<void>;
   refetchTeamData: () => Promise<void>;
   setTeamName: (newName: string) => void;
+  reorderTask: (
+    status: Task["status"],
+    oldIndex: number,
+    newIndex: number
+  ) => void;
+  moveTaskLocally: (taskId: number, newStatus: Task["status"]) => void;
 }

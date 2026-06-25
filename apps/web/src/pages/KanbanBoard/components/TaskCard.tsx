@@ -39,11 +39,17 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
   };
 
   const handleCardClick = () => {
+    // No expandir si se está arrastrando
     if (!isDragging) {
       setIsExpanded((prev) => !prev);
     }
   };
 
+  /*
+    stopEventPropagation: evita que clicks en el menú de opciones inicien un
+    drag. Sin esto, abrir el DropdownMenu podía ser interpretado como inicio
+    de arrastre por el PointerSensor.
+  */
   const stopEventPropagation = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
   };
@@ -54,7 +60,8 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
       className={cn(
         "group relative flex flex-col overflow-hidden border-gray-200 bg-white transition-all duration-200 ease-in-out",
         isDragging
-          ? "z-50 scale-[1.02] cursor-grabbing opacity-60 shadow-xl ring-1 ring-blue-500/50"
+          ?
+            "scale-[1.03] shadow-2xl ring-2 ring-blue-400/60 cursor-grabbing"
           : "cursor-grab shadow-sm hover:border-gray-300 hover:shadow-md",
         isExpanded && !isDragging ? "border-blue-200/60 shadow-sm" : ""
       )}
@@ -82,14 +89,14 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
-                  onClick={() => setTaskToEdit(task)} // Ejecuta la acción del Store
+                  onClick={() => setTaskToEdit(task)}
                   className="cursor-pointer"
                 >
                   <Pencil className="mr-2 h-4 w-4 text-blue-600" />
                   <span>Modificar</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => deleteTask(task.id)} // Ejecuta la acción del Store
+                  onClick={() => deleteTask(task.id)}
                   className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -99,6 +106,7 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
             </DropdownMenu>
           </div>
         </div>
+
         {!isExpanded && (
           <div className="flex items-center justify-between text-[11px] font-medium text-gray-500">
             <div className="flex items-center gap-1.5 rounded-sm bg-gray-100/80 px-1.5 py-0.5">
@@ -133,6 +141,11 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
         )}
       </div>
 
+      {/*
+        Sección expandible: solo se muestra en la tarjeta estática (no en el
+        DragOverlay). El DragOverlay siempre recibe isDragging=true, por lo que
+        la animación de expansión no se aplica mientras se arrastra.
+      */}
       <div
         className={cn(
           "grid transition-all duration-300 ease-in-out",
@@ -171,7 +184,8 @@ export const TaskCard = ({ task, isDragging = false }: TaskCardProps) => {
             <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
               <Clock className="h-3 w-3" />
               <span className="text-sm font-semibold">
-                Fecha de entrega: {format(new Date(task.endDate), "dd/MM/yyyy")}
+                Fecha de entrega:{" "}
+                {format(new Date(task.endDate), "dd/MM/yyyy")}
               </span>
             </div>
 
