@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { KanbanState, Task } from "./types";
 import type { TeamMember } from "@/interfaces";
+import { arrayMove } from "@dnd-kit/sortable";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -156,4 +157,17 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   setTeamName: (newName: string) => {
     set({ teamName: newName });
   },
+  reorderTask: (status, oldIndex, newIndex) => {
+  set((state) => {
+    // Separa las tareas de esta columna de las del resto
+    const columnTasks = state.tasks.filter((t) => t.status === status);
+    const otherTasks = state.tasks.filter((t) => t.status !== status);
+ 
+    // arrayMove es de @dnd-kit/sortable — ya lo tienes instalado
+    const reordered = arrayMove(columnTasks, oldIndex, newIndex);
+ 
+    // Reconstruye el array global manteniendo el orden original de las otras columnas
+    return { tasks: [...otherTasks, ...reordered] };
+  });
+},
 }));
