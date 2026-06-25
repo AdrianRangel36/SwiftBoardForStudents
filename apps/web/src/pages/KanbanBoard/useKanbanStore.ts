@@ -12,6 +12,7 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
   taskToEdit: null,
   user: null,
   teamId: null,
+  teamName: null,
 
   // Inicializa todo cuando el usuario entra a la vista
   initialize: async (teamId: string) => {
@@ -27,7 +28,6 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
     await Promise.all([
       get().fetchTeamTasks(teamId),
       get().fetchTeamMembers(teamId),
-      
     ]);
 
     set({ isLoading: false });
@@ -143,5 +143,17 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
       console.error("Error moviendo tarea:", error);
       if (teamId) fetchTeamTasks(teamId);
     }
+  },
+  // Ejecuta las peticiones de nuevo silenciosamente (sin poner isLoading a true)
+  refetchTeamData: async () => {
+    const { teamId, fetchTeamTasks, fetchTeamMembers } = get();
+    if (!teamId) return;
+
+    await Promise.all([fetchTeamTasks(teamId), fetchTeamMembers(teamId)]);
+  },
+
+  // Actualiza el nombre del equipo de forma local e instantánea
+  setTeamName: (newName: string) => {
+    set({ teamName: newName });
   },
 }));

@@ -4,7 +4,7 @@ import { useDashboard } from "./hooks";
 
 export const Dashboard: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { teams, isLoading, user, createTeam } = useDashboard();
+  const { isLoading, user, createTeam } = useDashboard();
 
   const handleCreateTeam = async (teamName: string) => {
     await createTeam(teamName);
@@ -20,7 +20,6 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <TeamsGrid
-          teams={teams}
           isLoading={isLoading}
           onCreateTeam={handleCreateTeam}
           isDialogOpen={isDialogOpen}

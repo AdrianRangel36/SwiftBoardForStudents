@@ -22,5 +22,6 @@ export interface TeamMember {
   user?: {
     name: string;
     paternalSurname: string;
+    maternalSurname: string;
   };
 }
